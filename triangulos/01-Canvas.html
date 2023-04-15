@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+    <title>Ejemplo 01 Canvas</title>
+    
+        <style>
+            body{ 
+                background-color: grey; 
+                font-family:Arial, Helvetica, sans-serif;                
+            }
+            canvas{ 
+                background-color: white; 
+            }
+            textarea{ 
+                background-color: black; 
+                background-color: white;
+            }
+            #titulo{
+                text-align:center;
+            }
+        </style>
+</head>
+
+<body>
+	<div id="titulo">		
+
+        <h1>Sistemas Gráficos</h1>
+        
+        <h2>WebGL Ejemplo 01 - Canvas y WebGL context</h2>
+        		
+		<canvas id="my-canvas" width="900" height="500">
+		    Your browser does not support the HTML5 canvas element.
+        </canvas>	
+        
+	</div>
+
+	<script>  
+
+        function initWebGL(){
+
+            // obtengo referencia al canvas
+            canvas = document.getElementById("my-canvas");  
+
+            try {
+                gl = canvas.getContext("webgl");                                    
+            } catch(e){
+                alert("Error al obtener el contexto");
+            }
+
+            if(gl){ 				
+                
+                gl.clearColor(0.1, 0.1, 0.5, 1.0);	
+                gl.clear( gl.COLOR_BUFFER_BIT);		// pinto el fondo de azul
+
+            } else {    
+                alert("Error: Su browser no soporta WebGL.");
+            }
+
+        }
+        // El objeto window es la ventana del navegador. En metodo onload se ejecuta una vez que todo el documento
+        // html esa completamente cargado y visible en la ventana
+        window.onload=initWebGL;        
+
+	</script>
+
+</body>
+</html>

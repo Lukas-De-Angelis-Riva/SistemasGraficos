@@ -51,6 +51,7 @@
         var distanciaCamara=3;
         var alturaCamara=2;
         var velocidadAngular=0.15;
+        var geometria="esfera"
         
         var lighting="true";
 
@@ -189,7 +190,7 @@
         }
               
         function drawScene() {
-        
+
             // Se configura el viewport dentro del "canvas". 
             // En este caso se utiliza toda el área disponible
             gl.viewport(0, 0, $canvas.width(), $canvas.height());
@@ -221,9 +222,8 @@
             var lightPosition = [10.0,0.0, 3.0];  
             gl.uniform3fv(shaderProgram.lightingDirectionUniform, lightPosition);            
 
-            setMatrixUniforms();    
-            dibujarGeometria();
-            
+            setMatrixUniforms();
+            dibujarGeometria(geometria);
         }
         
         function tick() {
@@ -231,8 +231,8 @@
             time+=1/60;
             
             // acumulo rotaciones en matrizModelado		        
-            mat4.rotate(matrizModelado, matrizModelado,0.03*velocidadAngular, [0, 1, 0]);
-                    
+            mat4.rotate(matrizModelado, matrizModelado,0.03*velocidadAngular, [0, 1, 0]); 
+
             drawScene();
         }
             
@@ -241,9 +241,13 @@
             gui.add(window, "distanciaCamara",0.01,5).step(0.01);
             gui.add(window, "alturaCamara",-4,4).step(0.01);;
             gui.add(window, "modo",["wireframe","smooth","edges", "points"]);
+            gui.add(window, "geometria", ["plano", "esfera", "tubo"])
+            .onChange(
+                function(){
+                    crearGeometria();
+                }
+            );
             gui.add(window, "velocidadAngular",0, 1).step(0.01);
-            
-            
         }
 
         function webGLStart() {
@@ -251,8 +255,8 @@
             initGL(canvas);
             initShaders();
 
-            
-            crearGeometria();
+
+            crearGeometria(geometria);
 
             gl.clearColor(66.2, 0.2, 0.2, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT);

@@ -1,5 +1,3 @@
-
-
 /*
 
     Tareas:
@@ -29,14 +27,18 @@
 var superficie3D;
 var mallaDeTriangulos;
 
-var filas=100;
-var columnas=100;
+var filas=30;
+var columnas=30;
 
 function crearGeometria(){
-//    superficie3D=new Plano(3,3);
-//    superficie3D=new Esfera(2);
-    superficie3D=new TuboSenoidal();
-    mallaDeTriangulos=generarSuperficie(superficie3D,filas,columnas);
+    if(geometria == "plano"){
+        var superficie3D = new Plano(3, 3);
+    }else if(geometria ==  "esfera"){
+        var superficie3D = new Esfera(2);
+    }else if(geometria == "tubo") {
+        var superficie3D = new TuboSenoidal();
+    }
+    mallaDeTriangulos=generarSuperficie(superficie3D,filas,columnas);    
 }
 
 function dibujarGeometria(){
@@ -46,20 +48,30 @@ function dibujarGeometria(){
 function TuboSenoidal(c=5, h=2.5, Amax=1, Amin=0.5){
     // u por c/columna; v por c/fila
     this.getPosicion=function(u,v){
-        A = (Amax-Amin)/2 * Math.cos(2*c*Math.PI*v) + (Amax+Amin)/2;
+        let A = (Amax-Amin)/2 * Math.cos(2*c*Math.PI*v) + (Amax+Amin)/2;
 
-        x=A*Math.cos(2*Math.PI*u);
-        z=A*Math.sin(2*Math.PI*u);
-        y = h*(0.5-v);
+        let x=A*Math.cos(2*Math.PI*u);
+        let z=A*Math.sin(2*Math.PI*u);
+        let y = h*(0.5-v);
         return [x,y,z];
     }
 
     this.getNormal=function(u,v){
-        A = (Amax-Amin)/2 * Math.cos(2*c*Math.PI*v) + (Amax+Amin)/2;
+        let a = (Amax-Amin)/2;
+        let b = 2*c*Math.PI;
+        let A = a * Math.cos(b*v) + (Amax+Amin)/2;
+        let dA = -a*b*Math.sin(b*v);
+        let d = 2*Math.PI;
+    
+        let xv = h*d*A*Math.cos(d*u);
+        let yv = A*d*dA;
+        let zv = h*d*A*Math.sin(d*u);
+
+        return [xv,yv,zv];
     }
 
     this.getCoordenadasTextura=function(u,v){
-        return [1, 0];
+        return [0.5, 0];
     }
 }
 
@@ -79,9 +91,9 @@ function Esfera(radio){
         let phi = 2*u*Math.PI;
         let theta = v*Math.PI;
 
-        xv=Math.sin(theta)*Math.cos(phi);
-        zv=Math.sin(theta)*Math.sin(phi);
-        yv=Math.cos(theta);
+        let xv=Math.sin(theta)*Math.cos(phi);
+        let zv=Math.sin(theta)*Math.sin(phi);
+        let yv=Math.cos(theta);
         return [xv,yv,zv];
     }
 

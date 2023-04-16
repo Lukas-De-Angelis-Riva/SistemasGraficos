@@ -29,22 +29,65 @@
 var superficie3D;
 var mallaDeTriangulos;
 
-var filas=1;
-var columnas=1;
-
+var filas=100;
+var columnas=100;
 
 function crearGeometria(){
-        
-
-    superficie3D=new Plano(3,3);
+//    superficie3D=new Plano(3,3);
+//    superficie3D=new Esfera(2);
+    superficie3D=new TuboSenoidal();
     mallaDeTriangulos=generarSuperficie(superficie3D,filas,columnas);
-    
 }
 
 function dibujarGeometria(){
-
     dibujarMalla(mallaDeTriangulos);
+}
 
+function TuboSenoidal(c=5, h=2.5, Amax=1, Amin=0.5){
+    // u por c/columna; v por c/fila
+    this.getPosicion=function(u,v){
+        A = (Amax-Amin)/2 * Math.cos(2*c*Math.PI*v) + (Amax+Amin)/2;
+
+        x=A*Math.cos(2*Math.PI*u);
+        z=A*Math.sin(2*Math.PI*u);
+        y = h*(0.5-v);
+        return [x,y,z];
+    }
+
+    this.getNormal=function(u,v){
+        A = (Amax-Amin)/2 * Math.cos(2*c*Math.PI*v) + (Amax+Amin)/2;
+    }
+
+    this.getCoordenadasTextura=function(u,v){
+        return [1, 0];
+    }
+}
+
+function Esfera(radio){
+    // u por c/columna; v por c/fila
+    this.getPosicion=function(u,v){
+        let phi = 2*u*Math.PI;
+        let theta = v*Math.PI;
+
+        var x = radio*Math.sin(theta)*Math.cos(phi);
+        var z = radio*Math.sin(theta)*Math.sin(phi);
+        var y = radio*Math.cos(theta);
+        return [x,y,z];
+    }
+
+    this.getNormal=function(u,v){
+        let phi = 2*u*Math.PI;
+        let theta = v*Math.PI;
+
+        xv=Math.sin(theta)*Math.cos(phi);
+        zv=Math.sin(theta)*Math.sin(phi);
+        yv=Math.cos(theta);
+        return [xv,yv,zv];
+    }
+
+    this.getCoordenadasTextura=function(u,v){
+        return [u,v];
+    }
 }
 
 function Plano(ancho,largo){
@@ -102,18 +145,22 @@ function generarSuperficie(superficie,filas,columnas){
 
     // Buffer de indices de los triángulos
     
-    //indexBuffer=[];  
-    indexBuffer=[0,1,2,2,1,3]; // Estos valores iniciales harcodeados solo dibujan 2 triangulos, REMOVER ESTA LINEA!
-
+    indexBuffer=[];
     for (i=0; i < filas; i++) {
-        for (j=0; j < columnas; j++) {
-
-            // completar la lógica necesaria para llenar el indexbuffer en funcion de filas y columnas
-            // teniendo en cuenta que se va a dibujar todo el buffer con la primitiva "triangle_strip" 
-            
+        for (j=0; j <= columnas; j++) {
+            let a = i*(columnas+1) + j;         ///  a --- b
+            let b = i*(columnas+1) + j + 1;     ///  |  /  |
+            let c = (i+1)*(columnas+1) + j;     ///  c --- d
+            indexBuffer.push(a);
+            indexBuffer.push(c);
+        }
+        if(i<filas-1){
+            indexBuffer.push((i+1)*(columnas+1)+columnas)
+            indexBuffer.push((i+1)*(columnas+1))
         }
     }
 
+    console.info(indexBuffer);
     // Creación e Inicialización de los buffers
 
     webgl_position_buffer = gl.createBuffer();
@@ -163,19 +210,20 @@ function dibujarMalla(mallaDeTriangulos){
        
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mallaDeTriangulos.webgl_index_buffer);
 
-
-    if (modo!="wireframe"){
-        gl.uniform1i(shaderProgram.useLightingUniform,(lighting=="true"));                    
-        /*
-            Aqui es necesario modificar la primitiva por triangle_strip
-        */
-        gl.drawElements(gl.TRIANGLES, mallaDeTriangulos.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
-    }
-    
-    if (modo!="smooth") {
+    if(modo=="points") {
+        gl.uniform1i(shaderProgram.useLightingUniform,(lighting=="true"));
+        gl.drawElements(gl.POINTS, mallaDeTriangulos.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+    } else if (modo=="edges") {
+        gl.uniform1i(shaderProgram.useLightingUniform,(lighting=="true"));
+        gl.drawElements(gl.TRIANGLE_STRIP, mallaDeTriangulos.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
         gl.uniform1i(shaderProgram.useLightingUniform,false);
         gl.drawElements(gl.LINE_STRIP, mallaDeTriangulos.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
-    }
- 
+    }else if (modo=="wireframe") {
+        gl.uniform1i(shaderProgram.useLightingUniform,false);
+        gl.drawElements(gl.LINE_STRIP, mallaDeTriangulos.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+    }else if (modo=="smooth") {
+        gl.uniform1i(shaderProgram.useLightingUniform,(lighting=="true"));
+        gl.drawElements(gl.TRIANGLE_STRIP, mallaDeTriangulos.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+    } 
 }
 

@@ -136,23 +136,23 @@ function tick() {
 
 function crearGeometria(){
     let obj1 = new SinTube(gl, 5, 2.5, 1, 0.5);
-    obj1.translate(-3, 0, 0)
 
-    let obj2 = new SinTube(gl, 5, 2.5, 1, 0.5);
-    obj2.translate(3, 0, 0)
+    let obj2 = new Sphere(gl, 0.5);
+    obj2.translate(-3, 0, 0)
+    let obj3 = new Sphere(gl, 0.5);
+    obj3.translate(3, 0, 0)
 
-    let obj3 = new SinTube(gl, 5, 2.5, 1, 0.5);
-    obj3.rotateX(-Math.PI/4);
+    obj1.addChild(obj2);
+    obj1.addChild(obj3);
+
+    obj1.rotateZ(Math.PI/4)
 
     objetos3D.push(obj1);
-    objetos3D.push(obj2);
-    objetos3D.push(obj3);
 }
 
 function dibujarGeometria(){
     objetos3D.forEach((o, i) => {
-        o.render(shaderProgram, parent)
-        o.renderNormal()
+        o.render(shaderProgram, parent);
     })
 }
 

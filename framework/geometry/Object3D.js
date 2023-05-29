@@ -19,16 +19,21 @@ export class Object3D {
         this.uvBuffer = [];
 
         this.modelMatrix = mat4.identity(mat4.create());
+
+        this.childs = [];
     }
 
+    /// Override
     getPosition(u, v) {
         return [0, 0, 0]
     }
 
+    /// Override
     getNormal(u, v) {
         return(0, 0, 0)
     }
     
+    /// Override
     getTextureCordenates(u, v) {
         return(0, 0)
     }
@@ -135,22 +140,27 @@ export class Object3D {
 
         gl.drawElements(gl.TRIANGLE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
         gl.drawElements(gl.LINE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+
+        // Activar o desactivar si se quieren (o no) ver las normales
+        this.renderNormal(shaderProgram);
+        //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        this.childs.forEach((o, i) => o.render(shaderProgram, m));
     }
 
-    renderNormal(){
+    renderNormal(shaderProgram){
         const gl = this.gl;
 
         let normals = []
 
-        console.log
         for(let i=0; i < this.positionBuffer.length;i +=3){
-            var line = vec3.create()
+            let line = vec3.create()
             
-            var normal_i = vec3.fromValues(
+            let normal_i = vec3.fromValues(
                 this.normalBuffer[i]/50,
                 this.normalBuffer[i+1]/50,
                 this.normalBuffer[i+2]/50);
-            var position_i = vec3.fromValues(
+            let position_i = vec3.fromValues(
                 this.positionBuffer[i],
                 this.positionBuffer[i+1],
                 this.positionBuffer[i+2]);
@@ -167,53 +177,26 @@ export class Object3D {
         }
 
 
+        // drawing the normals
+
         var vertex_buffer = gl.createBuffer( );
         gl.bindBuffer( gl.ARRAY_BUFFER, vertex_buffer );
         gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( normals ), gl.STATIC_DRAW );
-        gl.bindBuffer( gl.ARRAY_BUFFER, null );
-
-        var vertCode = 
-            'attribute vec3 coordinates;' +
-
-            'void main(void)' +
-
-            '{' +
-
-                ' gl_Position = vec4(coordinates, 1.0);' +
-
-            '}';
-
-        var vertShader = gl.createShader( gl.VERTEX_SHADER );
-        gl.shaderSource( vertShader, vertCode );
-
-        gl.compileShader( vertShader );
-
-        var fragCode = 
-            'void main(void)' +
-            '{' +
-                ' gl_FragColor = vec4(0.0, 0.0, 0.0, 0.1);' +
-            '}';
-
-        var fragShader = gl.createShader( gl.FRAGMENT_SHADER );
-        gl.shaderSource( fragShader, fragCode );
-        gl.compileShader( fragShader );
-
-        var shaderProgram = gl.createProgram( );
-        gl.attachShader( shaderProgram, vertShader );
-        gl.attachShader( shaderProgram, fragShader );
-        gl.linkProgram( shaderProgram );
+        vertex_buffer.itemSize = 3;
+        vertex_buffer.numItems = normals.length/3;
 
         gl.bindBuffer( gl.ARRAY_BUFFER, vertex_buffer );
+        gl.vertexAttribPointer( shaderProgram.vertexPositionAttribute, vertex_buffer.itemSize, gl.FLOAT, false, 0, 0 );
 
-        var coord = gl.getAttribLocation( shaderProgram, "coordinates" );
+        gl.enableVertexAttribArray( shaderProgram.vertexPositionAttribute );
 
-        gl.vertexAttribPointer( coord, 3, gl.FLOAT, false, 0, 0 );
+        gl.drawArrays( gl.LINES, 0, vertex_buffer.numItems );
 
-        gl.enableVertexAttribArray( coord );
-
-        gl.drawArrays( gl.LINES, 0, normals.length/3 );
     }
 
+    addChild(anObject3D){
+        this.childs.push(anObject3D);
+    }
 
     ///
     ///

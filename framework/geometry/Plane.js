@@ -1,7 +1,7 @@
 import { Object3D } from "./Object3D.js";
 
 export class Plane extends Object3D {
-    constructor(gl, h_div, v_div, length, width) {
+    constructor(gl, length, width, h_div=1, v_div=1) {
         super(gl, h_div, v_div);
         this.length = length;
         this.width = width;

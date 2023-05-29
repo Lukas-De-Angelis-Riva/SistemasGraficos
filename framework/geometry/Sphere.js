@@ -1,7 +1,7 @@
 import { Object3D } from "./Object3D.js";
 
 export class Sphere extends Object3D {
-    constructor(gl, h_div, v_div, radius) {
+    constructor(gl, radius, h_div=50, v_div=50) {
         super(gl, h_div, v_div);
         this.radius = radius;
         this.initBuffers();
@@ -26,8 +26,9 @@ export class Sphere extends Object3D {
         let zv=Math.sin(theta)*Math.sin(phi);
         let yv=Math.cos(theta);
 
-        // CHECK NORMALIZE
-        return [xv,yv,zv];
+        let ret = glMatrix.vec3.fromValues(xv, yv, zv)
+        glMatrix.vec3.normalize(ret, ret)
+        return ret;
     }
     
     getTextureCordenates(u, v) {

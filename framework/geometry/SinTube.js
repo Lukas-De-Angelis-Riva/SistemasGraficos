@@ -1,7 +1,7 @@
 import { Object3D } from "./Object3D.js";
 
 export class SinTube extends Object3D {
-    constructor(gl, h_div, v_div, c/*=5*/, h/*=2.5*/, Amax /*=1*/, Amin/*=0.5*/) {
+    constructor(gl, c/*=5*/, h/*=2.5*/, Amax /*=1*/, Amin/*=0.5*/, h_div=100, v_div=100) {
         super(gl, h_div, v_div);
         this.c = c;
         this.h = h;
@@ -40,8 +40,9 @@ export class SinTube extends Object3D {
         let yv = A*d*dA;
         let zv = h*d*A*Math.sin(d*u);
 
-        // CHECK NORMALIZE
-        return [xv,yv,zv];
+        let ret = glMatrix.vec3.fromValues(xv, yv, zv)
+        glMatrix.vec3.normalize(ret, ret)
+        return ret;
     }
 
     getTextureCordenates(u, v) {

@@ -2,14 +2,12 @@ import { Sphere } from './geometry/Sphere.js';
 import { Plane } from './geometry/Plane.js';
 import { SinTube } from './geometry/SinTube.js';
 
-var vertexShaderFile="vertex-shader.glsl";
-var shaderProgram;
 var time=0;
 
 var gl;
 var mat4=glMatrix.mat4;
 var mat3=glMatrix.mat3;
-var vec3=glMatrix.vec3;   
+var vec3=glMatrix.vec3;
     
 var $canvas=$("#myCanvas");
 var aspect=$canvas.width()/$canvas.height();
@@ -20,33 +18,17 @@ var app={
     velocidadAngular:0.15,
 };
 
-var lighting="true";
-
+var vertexShaderFile="vertex-shader.glsl";
 var vertexShaderSource;
 var fragmentShaderSource;
+var shaderProgram;
 
 var matrizProyeccion = mat4.create();
 var matrizVista = mat4.create();
-var matrizModelado = mat4.create();
-
-var objeto3D;
-var filas=250;
-var columnas=250;
+var parent = mat4.identity(mat4.create());
 
 
-function initGL(canvas) {
-
-    try {
-        gl = canvas.getContext("webgl");
-        gl.canvas.width=$canvas.width();
-        gl.canvas.height=$canvas.height();
-    } catch (e) {
-        console.error(e);
-    }
-    if (!gl) {
-        alert("Could not initialise WebGL, sorry :-(");
-    }
-}
+var objetos3D = [];
 
 function loadShaders(){
 
@@ -62,7 +44,7 @@ function loadShaders(){
                 vertexShaderSource=result;
             }
         });
-    }   
+    }
 
     function loadFS() {
         return  $.ajax({
@@ -93,69 +75,24 @@ function getShader(gl,code,type) {
     return shader;
 }
 
+function initGL(canvas) {
+
+    try {
+        gl = canvas.getContext("webgl");
+        gl.canvas.width=$canvas.width();
+        gl.canvas.height=$canvas.height();
+    } catch (e) {
+        console.error(e);
+    }
+    if (!gl) {
+        alert("Could not initialise WebGL, sorry :-(");
+    }
+}
+
 function onResize(){
     gl.canvas.width=$canvas.width();
     gl.canvas.height=$canvas.height();
     aspect=$canvas.width()/$canvas.height();
-}
-
-function getShaderSource(url) {
-    var req = new XMLHttpRequest();
-    req.open("GET", url, false);
-    req.send(null);
-    return (req.status == 200) ? req.responseText : null;
-}; 
-
-function initShaders() {
-
-    var fragmentShader= getShader(gl, vertexShaderSource,"vertex");
-    var vertexShader= getShader(gl, fragmentShaderSource,"fragment");
-
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert("Could not initialise shaders");
-    }
-
-    gl.useProgram(shaderProgram);
-
-    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aPosition");
-    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-    shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aUv");
-    gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
-
-    shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aNormal");
-    gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
-
-    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-    shaderProgram.mMatrixUniform = gl.getUniformLocation(shaderProgram, "uMMatrix");
-    shaderProgram.vMatrixUniform = gl.getUniformLocation(shaderProgram, "uVMatrix");
-    shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-    shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
-    shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, "uUseLighting");
-    shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
-    shaderProgram.frameUniform = gl.getUniformLocation(shaderProgram, "time");
-    shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightPosition");
-    shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
-}
-
-function setMatrixUniforms() {
-    
-    gl.uniformMatrix4fv(shaderProgram.mMatrixUniform, false, matrizModelado);
-    gl.uniformMatrix4fv(shaderProgram.vMatrixUniform, false, matrizVista);
-    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, matrizProyeccion);
-
-    var normalMatrix = mat3.create();
-    mat3.fromMat4(normalMatrix,matrizModelado); // normalMatrix= (inversa(traspuesta(matrizModelado)));
-
-    mat3.invert(normalMatrix, normalMatrix);
-    mat3.transpose(normalMatrix,normalMatrix);
-
-    gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
 }
       
 function drawScene() {
@@ -172,14 +109,7 @@ function drawScene() {
     mat4.identity(matrizProyeccion);
     mat4.perspective(matrizProyeccion, 30, aspect, 0.1, 100.0);
     mat4.scale(matrizProyeccion,matrizProyeccion,[1,-1,1]); // parche para hacer un flip de Y, parece haber un bug en glmatrix
-       
-    // Se inicializan las variables asociadas con la Iluminación
-    
-    gl.uniform1f(shaderProgram.frameUniform, time/10.0 );
-    gl.uniform3f(shaderProgram.ambientColorUniform, 0.6, 0.6, 0.6 );
-    gl.uniform3f(shaderProgram.directionalColorUniform, 1.2, 1.1, 0.7);
-    gl.uniform1i(shaderProgram.useLightingUniform,(lighting=="true"));
-    
+
     // Definimos la ubicación de la camara
     
     mat4.lookAt(matrizVista,
@@ -187,30 +117,43 @@ function drawScene() {
         vec3.fromValues(0,0,0),
         vec3.fromValues(0,1,0)
     );
-        
-    var lightPosition = [10.0,0.0, 3.0];  
-    gl.uniform3fv(shaderProgram.lightingDirectionUniform, lightPosition);
 
-    setMatrixUniforms();
+    gl.uniformMatrix4fv(shaderProgram.mMatrixUniform, false, mat4.identity(mat4.create()));
+    gl.uniformMatrix4fv(shaderProgram.viewMatrixUniform, false, matrizVista);
+    gl.uniformMatrix4fv(shaderProgram.projMatrixUniform, false, matrizProyeccion);
+
     dibujarGeometria();
 }
 
 function tick() {
     requestAnimFrame(tick);
     time+=1/60;
-    
-    // acumulo rotaciones en matrizModelado		        
-    mat4.rotate(matrizModelado, matrizModelado,0.03*app.velocidadAngular, [0, 1, 0]); 
 
+    mat4.rotate(parent, parent,0.03*app.velocidadAngular, [0, 1, 0]); 
+ 
     drawScene();
 }
 
 function crearGeometria(){
-    objeto3D = new SinTube(gl, filas, columnas, 5, 2.5, 1, 0.5);
+    let obj1 = new SinTube(gl, 5, 2.5, 1, 0.5);
+    obj1.translate(-3, 0, 0)
+
+    let obj2 = new SinTube(gl, 5, 2.5, 1, 0.5);
+    obj2.translate(3, 0, 0)
+
+    let obj3 = new SinTube(gl, 5, 2.5, 1, 0.5);
+    obj3.rotateX(-Math.PI/4);
+
+    objetos3D.push(obj1);
+    objetos3D.push(obj2);
+    objetos3D.push(obj3);
 }
 
 function dibujarGeometria(){
-    objeto3D.render(shaderProgram, lighting)
+    objetos3D.forEach((o, i) => {
+        o.render(shaderProgram, parent)
+        o.renderNormal()
+    })
 }
 
 function initMenu(){
@@ -220,11 +163,39 @@ function initMenu(){
     gui.add(app, "velocidadAngular",0, 1).step(0.01);
 }
 
+function initShaders() {
+
+    var fragmentShader = getShader(gl, vertexShaderSource, "vertex");
+    var vertexShader = getShader(gl, fragmentShaderSource, "fragment");
+
+    shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        alert("Could not initialise shaders");
+    }
+    gl.useProgram(shaderProgram);
+
+    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+    shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+    gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+
+    shaderProgram.modelMatrixUniform = gl.getUniformLocation(shaderProgram, "modelMatrix");
+    shaderProgram.viewMatrixUniform = gl.getUniformLocation(shaderProgram, "viewMatrix");
+    shaderProgram.projMatrixUniform = gl.getUniformLocation(shaderProgram, "projMatrix");
+    shaderProgram.normalMatrixUniform = gl.getUniformLocation(shaderProgram, "normalMatrix");
+}
+
+
 function webGLStart() {
     var canvas = document.getElementById("myCanvas");
     initGL(canvas);
+    
     initShaders();
-
 
     crearGeometria();
 

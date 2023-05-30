@@ -8,6 +8,7 @@ import { Circle } from './geometry/polygons/Circle.js';
 import { SweepCurve } from './geometry/SweepCurve.js';
 import { Circumference } from './geometry/curves/Circumference.js';
 import { Revolution } from './geometry/Revolution.js';
+import { Camera } from './Camera.js';
 
 var time=0;
 
@@ -31,8 +32,9 @@ var fragmentShaderSource;
 var shaderProgram;
 
 var matrizProyeccion = mat4.create();
-var matrizVista = mat4.create();
 var parent = mat4.identity(mat4.create());
+
+var camera;
 
 var objetos3D = [];
 
@@ -113,19 +115,14 @@ function drawScene() {
 
     // Se configura la matriz de proyección
     mat4.identity(matrizProyeccion);
-    mat4.perspective(matrizProyeccion, 30, aspect, 0.1, 100.0);
+    mat4.perspective(matrizProyeccion, mouse.zoom, aspect, 0.1, 100.0);
     mat4.scale(matrizProyeccion,matrizProyeccion,[1,-1,1]); // parche para hacer un flip de Y, parece haber un bug en glmatrix
 
     // Definimos la ubicación de la camara
     
-    mat4.lookAt(matrizVista,
-        vec3.fromValues(0,app.alturaCamara,app.distanciaCamara),
-        vec3.fromValues(0,0,0),
-        vec3.fromValues(0,1,0)
-    );
+    camera.look(shaderProgram);
 
     gl.uniformMatrix4fv(shaderProgram.mMatrixUniform, false, mat4.identity(mat4.create()));
-    gl.uniformMatrix4fv(shaderProgram.viewMatrixUniform, false, matrizVista);
     gl.uniformMatrix4fv(shaderProgram.projMatrixUniform, false, matrizProyeccion);
 
     dibujarGeometria();
@@ -135,7 +132,19 @@ function tick() {
     requestAnimFrame(tick);
     time+=1/60;
 
-    mat4.rotate(parent, parent,0.03*app.velocidadAngular, [0, 1, 0]); 
+    if(mouse.prev_x != mouse.x){
+        let deltaX =-(mouse.new_x - mouse.prev_x);
+        mouse.prev_x = mouse.new_x;
+        camera.turnSide(deltaX * 2 * Math.PI * 1/5000);
+    }
+    if(mouse.prev_y != mouse.y){
+        let deltaY = -(mouse.new_y - mouse.prev_y);
+        mouse.prev_y = mouse.new_y;
+        camera.tunrUp(deltaY * 2 * Math.PI * 1/5000);
+    }
+
+    camera.move(movement);
+    mat4.rotate(parent, parent,0.03*app.velocidadAngular, [0, 1, 0]);
  
     drawScene();
 }
@@ -195,6 +204,8 @@ function webGLStart() {
     
     initShaders();
 
+    camera = new Camera(gl);
+
     crearGeometria();
 
     gl.clearColor(66.2, 0.2, 0.2, 1.0);
@@ -205,6 +216,99 @@ function webGLStart() {
     initMenu();
     tick();
 }
+
+var mouse = new Object();
+mouse.isDown = false;
+mouse.prev_x = 0;
+mouse.prev_y = 0;
+mouse.new_x = 0;
+mouse.new_y = 0;
+mouse.zoom = 30;
+
+var movement = new Object();
+movement.left = false;
+movement.back = false;
+movement.front = false;
+movement.right = false;
+movement.up = false;
+movement.down = false;
+
+movement.turnup = false;
+movement.turndown = false;
+movement.turnleft = false;
+movement.turnright = false;
+
+document.addEventListener('keydown', function(event) {
+    if(event.key == 'a') movement.left = true;
+    if(event.key == 's') movement.back = true;
+    if(event.key == 'd') movement.right = true;
+    if(event.key == 'w') movement.front = true;
+    if(event.key == ' ') movement.up = true;
+    if(event.key == 'z') movement.down = true;
+
+    if(event.key == 'ArrowRight') movement.turnright = true;
+    if(event.key == 'ArrowLeft') movement.turnleft = true;
+    if(event.key == 'ArrowUp') movement.turnup = true;
+    if(event.key == 'ArrowDown') movement.turndown = true;
+});
+
+document.addEventListener('keyup', function(event) {
+    if(event.key == 'a') movement.left = false;
+    if(event.key == 's') movement.back = false;
+    if(event.key == 'd') movement.right = false;
+    if(event.key == 'w') movement.front = false;
+    if(event.key == ' ') movement.up = false;
+    if(event.key == 'z') movement.down = false;
+
+    if(event.key == 'ArrowRight') movement.turnright = false;
+    if(event.key == 'ArrowLeft') movement.turnleft = false;
+    if(event.key == 'ArrowUp') movement.turnup = false;
+    if(event.key == 'ArrowDown') movement.turndown = false;
+});
+
+document.addEventListener('keyup', function(event) {
+    if(event.key == 'a') movement.left = false;
+    if(event.key == 's') movement.back = false;
+    if(event.key == 'd') movement.right = false;
+    if(event.key == 'w') movement.front = false;
+    if(event.key == ' ') movement.up = false;
+    if(event.key == 'z') movement.down = false;
+
+    if(event.key == 'ArrowRight') movement.turnright = false;
+    if(event.key == 'ArrowLeft') movement.turnleft = false;
+    if(event.key == 'ArrowUp') movement.turnup = false;
+    if(event.key == 'ArrowDown') movement.turndown = false;
+});
+
+document.addEventListener('mousedown', function(event) {
+    mouse.isDown = true;
+});
+
+document.addEventListener('mouseup', function(event) {
+    mouse.isDown = false;
+});
+
+document.addEventListener('mousemove', function(event) {
+    if (mouse.isDown){
+        mouse.new_x = event.clientX || event.pageX;
+        mouse.new_y = event.clientY || event.pageY;
+    } else {
+        mouse.new_x = event.clientX || event.pageX;
+        mouse.new_y = event.clientY || event.pageY;    
+        mouse.prev_x = mouse.new_x;
+        mouse.prev_y = mouse.new_y;
+    }
+});
+
+document.addEventListener('wheel', function(event) {
+    console.log(event);
+    mouse.zoom -= event.deltaY/1200;
+    if(mouse.zoom > 31){
+        mouse.zoom = 31;
+    }else if(mouse.zoom < 30){
+        mouse.zoom = 30;
+    }
+})
 
 // cuando el documento HTML esta completo, iniciamos la aplicación
 $(document).ready(function(){

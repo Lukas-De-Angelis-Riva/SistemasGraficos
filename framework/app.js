@@ -1,6 +1,11 @@
 import { Sphere } from './geometry/Sphere.js';
 import { Plane } from './geometry/Plane.js';
 import { SinTube } from './geometry/SinTube.js';
+import { QuadraticBezier } from './geometry/curves/QuadraticBezier.js';
+import { CubicBezier } from './geometry/curves/CubicBezier.js';
+import { Square } from './geometry/polygons/Square.js';
+import { Circle } from './geometry/polygons/Circle.js';
+import { SweepCurve } from './geometry/SweepCurve.js';
 
 var time=0;
 
@@ -26,7 +31,6 @@ var shaderProgram;
 var matrizProyeccion = mat4.create();
 var matrizVista = mat4.create();
 var parent = mat4.identity(mat4.create());
-
 
 var objetos3D = [];
 
@@ -135,19 +139,32 @@ function tick() {
 }
 
 function crearGeometria(){
-    let obj1 = new SinTube(gl, 5, 2.5, 1, 0.5);
+    let square = new Square(2);
+    let circle = new Circle(0.5, 100);
+    let points = [[0, 0, 0], [0, 2, 0], [2, 2, 0], [2, 4, 0]];
+    let path = new CubicBezier(gl, points);
 
-    let obj2 = new Sphere(gl, 0.5);
-    obj2.translate(-3, 0, 0)
-    let obj3 = new Sphere(gl, 0.5);
-    obj3.translate(3, 0, 0)
+    let obj = new SweepCurve(gl, circle, path, 0.05);
+    objetos3D.push(obj);
 
-    obj1.addChild(obj2);
-    obj1.addChild(obj3);
+/*    let obj1 = new SinTube(gl, 5, 2.5, 1, 0.5);
+    obj1.translate(0, 2.5, 0);
+    obj1.scale(0.1,1,0.1);
 
-    obj1.rotateZ(Math.PI/4)
+    let obj2 = new SinTube(gl, 5, 2.5, 1, 0.5);
+    obj2.translate(2.5, 0, 0);
+    obj2.rotateZ(Math.PI/2);
+    obj2.scale(0.1,1,0.1);
+
+    let obj3 = new SinTube(gl, 5, 2.5, 1, 0.5);
+    obj3.translate(0, 0, 2.5);
+    obj3.rotateX(Math.PI/2);
+    obj3.scale(0.1,2,0.1);
 
     objetos3D.push(obj1);
+    objetos3D.push(obj2);
+    objetos3D.push(obj3);*/
+
 }
 
 function dibujarGeometria(){

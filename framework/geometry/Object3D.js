@@ -157,16 +157,16 @@ export class Object3D {
             let line = vec3.create()
             
             let normal_i = vec3.fromValues(
-                this.normalBuffer[i]/50,
-                this.normalBuffer[i+1]/50,
-                this.normalBuffer[i+2]/50);
+                this.normalBuffer[i]/10,
+                this.normalBuffer[i+1]/10,
+                this.normalBuffer[i+2]/10);
             let position_i = vec3.fromValues(
                 this.positionBuffer[i],
                 this.positionBuffer[i+1],
                 this.positionBuffer[i+2]);
 
             vec3.add(line, position_i, normal_i);
-        
+
             normals.push(this.positionBuffer[i]);
             normals.push(this.positionBuffer[i+1]);
             normals.push(this.positionBuffer[i+2]);
@@ -175,7 +175,6 @@ export class Object3D {
             normals.push(line[1]);
             normals.push(line[2]);
         }
-
 
         // drawing the normals
 

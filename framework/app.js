@@ -6,6 +6,8 @@ import { CubicBezier } from './geometry/curves/CubicBezier.js';
 import { Square } from './geometry/polygons/Square.js';
 import { Circle } from './geometry/polygons/Circle.js';
 import { SweepCurve } from './geometry/SweepCurve.js';
+import { Circumference } from './geometry/curves/Circumference.js';
+import { Revolution } from './geometry/Revolution.js';
 
 var time=0;
 
@@ -139,32 +141,11 @@ function tick() {
 }
 
 function crearGeometria(){
-    let square = new Square(2);
     let circle = new Circle(0.5, 100);
     let points = [[0, 0, 0], [0, 2, 0], [2, 2, 0], [2, 4, 0]];
     let path = new CubicBezier(gl, points);
-
-    let obj = new SweepCurve(gl, circle, path, 0.05);
+    let obj = new SweepCurve(gl,circle, path, 0.01)
     objetos3D.push(obj);
-
-/*    let obj1 = new SinTube(gl, 5, 2.5, 1, 0.5);
-    obj1.translate(0, 2.5, 0);
-    obj1.scale(0.1,1,0.1);
-
-    let obj2 = new SinTube(gl, 5, 2.5, 1, 0.5);
-    obj2.translate(2.5, 0, 0);
-    obj2.rotateZ(Math.PI/2);
-    obj2.scale(0.1,1,0.1);
-
-    let obj3 = new SinTube(gl, 5, 2.5, 1, 0.5);
-    obj3.translate(0, 0, 2.5);
-    obj3.rotateX(Math.PI/2);
-    obj3.scale(0.1,2,0.1);
-
-    objetos3D.push(obj1);
-    objetos3D.push(obj2);
-    objetos3D.push(obj3);*/
-
 }
 
 function dibujarGeometria(){

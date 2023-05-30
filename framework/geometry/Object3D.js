@@ -139,7 +139,7 @@ export class Object3D {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.webgl_index_buffer);
 
         gl.drawElements(gl.TRIANGLE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
-        gl.drawElements(gl.LINE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+        //gl.drawElements(gl.LINE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
 
         // Activar o desactivar si se quieren (o no) ver las normales
         this.renderNormal(shaderProgram);
@@ -157,9 +157,9 @@ export class Object3D {
             let line = vec3.create()
             
             let normal_i = vec3.fromValues(
-                this.normalBuffer[i]/10,
-                this.normalBuffer[i+1]/10,
-                this.normalBuffer[i+2]/10);
+                this.normalBuffer[i]/5,
+                this.normalBuffer[i+1]/5,
+                this.normalBuffer[i+2]/5);
             let position_i = vec3.fromValues(
                 this.positionBuffer[i],
                 this.positionBuffer[i+1],

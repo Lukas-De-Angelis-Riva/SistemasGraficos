@@ -5,10 +5,10 @@ var vec3=glMatrix.vec3;
 
 export class SweepCurve extends Object3D {
     constructor(gl, profile, path, step) {
-        let h_div = path.length() / step; 
+        let h_div = path.length() / step;
         let v_div = profile.vs.length-1;
-
         super(gl, h_div, v_div);
+
         this.profile = profile;
         this.path = path;
         this.initBuffers();
@@ -29,7 +29,7 @@ export class SweepCurve extends Object3D {
     getNormal(u, v) {
         let vertex_n = Math.round(u*(this.profile.vs.length-1));
         let p = this.profile.vs[vertex_n];
-        let normal = vec4.fromValues(p.xn, p.yn, p.zn, 1);
+        let normal = vec4.fromValues(p.nx, p.ny, p.nz, 1);
 
         let level = this.path.evaluate(v);
         let levelMatrix = mat4.fromValues(

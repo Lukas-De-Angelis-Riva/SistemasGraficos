@@ -1,8 +1,8 @@
-import { Curve } from "./Curve.js";
+import { BasedCurve } from "./BasedCurve.js";
 
-export class CubicBezier extends Curve {
+export class CubicBezier extends BasedCurve {
     static B0 = function(u) { return (1-u)*(1-u)*(1-u); }   //   u⁰(1-u)³
-    static B1 = function(u) { return 3*(1-u)*(1-u)*u; }     // 3 u¹(1-u)² 
+    static B1 = function(u) { return 3*(1-u)*(1-u)*u; }     // 3 u¹(1-u)²
     static B2 = function(u) { return 3*(1-u)*u*u; }         // 3 u²(1-u)¹
     static B3 = function(u) { return u*u*u; }               //   u³(1-u)⁰
 

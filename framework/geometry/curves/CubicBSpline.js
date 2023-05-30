@@ -1,6 +1,6 @@
-import { Curve } from "./Curve.js";
+import { BasedCurve } from "./BasedCurve.js";
 
-export class CubicBSpline extends Curve {
+export class CubicBSpline extends BasedCurve {
     static B0 = function(u) { return (1-3*u+3*u*u-u*u*u)*1/6;}  // (1 -3u +3u² -u³)/6
     static B1 = function(u) { return (4-6*u*u+3*u*u*u)*1/6; }   // (4 -6u² +3u³)/6
     static B2 = function(u) { return (1+3*u+3*u*u-3*u*u*u)*1/6} // (1 +3u +3u² -3u³)/6

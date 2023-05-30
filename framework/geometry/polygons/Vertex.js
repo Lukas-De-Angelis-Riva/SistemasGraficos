@@ -1,11 +1,11 @@
 export class Vertex {
-    constructor(x, y, z, xn, yn, zn) {
+    constructor(x, y, z, nx, ny, nz) {
         this.x = x;
         this.y = y;
         this.z = z;
 
-        this.xn = xn;
-        this.yn = yn;
-        this.zn = zn;
+        this.nx = nx;
+        this.ny = ny;
+        this.nz = nz;
     }
 }

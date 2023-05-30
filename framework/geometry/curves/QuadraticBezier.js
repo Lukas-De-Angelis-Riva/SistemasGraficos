@@ -1,6 +1,6 @@
-import { Curve } from "./Curve.js";
+import { BasedCurve } from "./BasedCurve.js";
 
-export class QuadraticBezier extends Curve {
+export class QuadraticBezier extends BasedCurve {
     static B0 = function(u) { return (1-u)*(1-u); }     // (1-u)²
     static B1 = function(u) { return 2*u*(1-u); }       // 2u(1-u)
     static B2 = function(u) { return u*u; }             // u²

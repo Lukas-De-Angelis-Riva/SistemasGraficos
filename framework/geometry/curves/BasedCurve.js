@@ -20,7 +20,7 @@ export class BasedCurve {
     evaluate(u){
         let pos = vec3.create();
         let tan = vec3.create();
-        let binor = vec3.fromValues(0, 0, -1);
+        let binor = vec3.fromValues(0, 0, 1);
 
         for(let i=0; i < this.controlPoints.length; i++){
             let p = this.controlPoints[i];

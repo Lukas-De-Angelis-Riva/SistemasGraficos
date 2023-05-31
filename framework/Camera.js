@@ -75,8 +75,8 @@ export class Camera {
     }
 
     move(movement){
-        let delta = 0.025;
-        let rad = 2*Math.PI* 0.0025;
+        let delta = 0.10;
+        let rad = 2*Math.PI* delta/10;
 
         if (movement.front) this.moveForward(delta);
         if (movement.back) this.moveForward(-delta);

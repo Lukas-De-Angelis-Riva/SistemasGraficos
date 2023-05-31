@@ -1,15 +1,6 @@
-import { Sphere } from './geometry/Sphere.js';
 import { Plane } from './geometry/Plane.js';
-import { SinTube } from './geometry/SinTube.js';
-import { QuadraticBezier } from './geometry/curves/QuadraticBezier.js';
-import { CubicBezier } from './geometry/curves/CubicBezier.js';
-import { Square } from './geometry/polygons/Square.js';
-import { Circle } from './geometry/polygons/Circle.js';
-import { SweepCurve } from './geometry/SweepCurve.js';
-import { Circumference } from './geometry/curves/Circumference.js';
-import { Revolution } from './geometry/Revolution.js';
 import { Camera } from './Camera.js';
-import { Path } from './geometry/curves/Path.js';
+import { Bridge } from './geometry/Bridge.js';
 
 var time=0;
 
@@ -145,7 +136,7 @@ function tick() {
     }
 
     camera.move(movement);
-    mat4.rotate(parent, parent,0.03*app.velocidadAngular, [0, 1, 0]);
+//    mat4.rotate(parent, parent,0.03*app.velocidadAngular, [0, 1, 0]);
  
     drawScene();
 }
@@ -155,22 +146,9 @@ function crearGeometria(){
     plano.translate(0, -4, 0);
     objetos3D.push(plano);
 
-    let points1 = [[0, 0, 0], [1, 1, 0], [1, 3, 0], [2, 4, 0]];
-    let curve1 = new CubicBezier(gl, points1);
-    let points2 = [[3, 5, 0], [4, 6, 0], [3, 3, 0], [4, 1, 0]];
-    let curve2 = new CubicBezier(gl, points2);
-    let path = new Path(gl, [curve1, curve2]);
-    console.log(path);
-    let circle = new Circle(0.25, 10);
-    let obj = new SweepCurve(gl, circle, path, 0.01)
-    objetos3D.push(obj);
-/*
-    let circle = new Circle(0.5, 100);
-    let points = [[0, 0, 0], [0, 2, 0], [2, 2, 0], [2, 4, 0]];
-    let path = new CubicBezier(gl, points);
-    let obj = new SweepCurve(gl,circle, path, 0.01)
-    objetos3D.push(obj);
-*/
+    let bridge = new Bridge(gl);
+    objetos3D.push(bridge);
+
 }
 
 function dibujarGeometria(){

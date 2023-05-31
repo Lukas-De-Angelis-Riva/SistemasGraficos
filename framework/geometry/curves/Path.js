@@ -21,7 +21,6 @@ export class Path {
         var points = [];
         for(let u=0; u<=this._length+step/2; u+=step){
             points.push(this.evaluate(u));
-            console.log(points);
         }
         return points;
     }

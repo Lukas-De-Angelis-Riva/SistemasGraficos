@@ -9,6 +9,7 @@ import { SweepCurve } from './geometry/SweepCurve.js';
 import { Circumference } from './geometry/curves/Circumference.js';
 import { Revolution } from './geometry/Revolution.js';
 import { Camera } from './Camera.js';
+import { Path } from './geometry/curves/Path.js';
 
 var time=0;
 
@@ -150,11 +151,26 @@ function tick() {
 }
 
 function crearGeometria(){
+    let plano = new Plane(gl, 100, 100);
+    plano.translate(0, -4, 0);
+    objetos3D.push(plano);
+
+    let points1 = [[0, 0, 0], [1, 1, 0], [1, 3, 0], [2, 4, 0]];
+    let curve1 = new CubicBezier(gl, points1);
+    let points2 = [[3, 5, 0], [4, 6, 0], [3, 3, 0], [4, 1, 0]];
+    let curve2 = new CubicBezier(gl, points2);
+    let path = new Path(gl, [curve1, curve2]);
+    console.log(path);
+    let circle = new Circle(0.25, 10);
+    let obj = new SweepCurve(gl, circle, path, 0.01)
+    objetos3D.push(obj);
+/*
     let circle = new Circle(0.5, 100);
     let points = [[0, 0, 0], [0, 2, 0], [2, 2, 0], [2, 4, 0]];
     let path = new CubicBezier(gl, points);
     let obj = new SweepCurve(gl,circle, path, 0.01)
     objetos3D.push(obj);
+*/
 }
 
 function dibujarGeometria(){

@@ -18,7 +18,7 @@ export class SweepCurve extends Object3D {
         let vertex_n = Math.round(u*(this.profile.vs.length-1));
         let p = this.profile.vs[vertex_n];
 
-        let level = this.path.evaluate(v);
+        let level = this.path.evaluate(v*this.path.length());
 
         let x = level.nx * p.x + level.bx * p.y + level.tx * p.z + level.x;
         let y = level.ny * p.x + level.by * p.y + level.ty * p.z + level.y;
@@ -31,7 +31,7 @@ export class SweepCurve extends Object3D {
         let p = this.profile.vs[vertex_n];
         let normal = vec4.fromValues(p.nx, p.ny, p.nz, 1);
 
-        let level = this.path.evaluate(v);
+        let level = this.path.evaluate(v*this.path.length());
         let levelMatrix = mat4.fromValues(
             level.nx, level.bx, level.tx, level.x,
             level.ny, level.by, level.ty, level.y,

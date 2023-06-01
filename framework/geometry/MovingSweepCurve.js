@@ -28,15 +28,15 @@ function center(vs) {
     return p;
 }
 
-export class SweepCurve extends Object3D {
-    constructor(gl, profile, path, step, closed=true) {
-        let h_div = path.length() / step + 4*closed;
-        let v_div = profile.vs.length-1;
+export class MovingSweepCurve extends Object3D {
+    constructor(gl, curve, step_curve, path, step_path, closed=false) {
+        let h_div = path.length() / step_path + 4*closed;
+        let v_div = curve.length() / step_curve;
         super(gl, h_div, v_div);
 
-        this.closed = closed;
-        this.profile = profile;
+        this.curve = curve;
         this.path = path;
+        this.closed = closed;
         this.initBuffers();
     }
 
@@ -51,22 +51,19 @@ export class SweepCurve extends Object3D {
         v = fix(v);
 
         if (closed && approx_equals(v, -2/(this.rows-4))) {            // v° == 0
-            p = center(this.profile.vs);
+            p = center(this.curve.discretization(0.1));
             level = this.path.evaluate(0);
         } else if (closed && approx_equals(v, -1/(this.rows-4))) {     // v° == 1
-            let vertex_n = Math.round(u*(this.profile.vs.length-1));
-            p = this.profile.vs[vertex_n];
+            p = this.curve.evaluate(u*this.curve.length());
             level = this.path.evaluate(0); 
         } else if (closed && approx_equals(v, 1+1/(this.rows-4))) {    // v° == c-1
-            let vertex_n = Math.round(u*(this.profile.vs.length-1));
-            p = this.profile.vs[vertex_n];
+            p = this.curve.evaluate(u*this.curve.length());
             level = this.path.evaluate(this.path.length()); 
         } else if (closed && approx_equals(v, 1+2/(this.rows-4))) {    // v° == c
-            p = center(this.profile.vs);
+            p = center(this.curve.discretization(0.1));
             level = this.path.evaluate(this.path.length());
         } else {
-            let vertex_n = Math.round(u*(this.profile.vs.length-1));
-            p = this.profile.vs[vertex_n];
+            p = this.curve.evaluate(u*this.curve.length());
             level = this.path.evaluate(v*this.path.length());
         }
 
@@ -91,8 +88,7 @@ export class SweepCurve extends Object3D {
             return [level.tx, level.ty, level.tz];
         }
 
-        let vertex_n = Math.round(u*(this.profile.vs.length-1));
-        let p = this.profile.vs[vertex_n];
+        let p = this.curve.evaluate(u);
         let normal = vec4.fromValues(p.nx, p.ny, p.nz, 1);
 
         let level = this.path.evaluate(v*this.path.length());

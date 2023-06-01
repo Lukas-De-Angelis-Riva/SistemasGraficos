@@ -1,6 +1,6 @@
 import { Plane } from './geometry/Plane.js';
 import { Camera } from './Camera.js';
-import { Bridge, Ship } from './geometry/Bridge.js';
+import { Bridge, Ship, Terrain } from './geometry/Bridge.js';
 import { Cube } from './geometry/Cube.js';
 
 var time=0;
@@ -14,9 +14,8 @@ var $canvas=$("#myCanvas");
 var aspect=$canvas.width()/$canvas.height();
 
 var app={
-    distanciaCamara:3,
-    alturaCamara:2,
-    velocidadAngular:0.15,
+    h1:3,
+    h2:2,
 };
 
 var vertexShaderFile="vertex-shader.glsl";
@@ -95,7 +94,7 @@ function onResize(){
     gl.canvas.height=$canvas.height();
     aspect=$canvas.width()/$canvas.height();
 }
-      
+
 function drawScene() {
 
     // Se configura el viewport dentro del "canvas". 
@@ -103,7 +102,7 @@ function drawScene() {
     gl.viewport(0, 0, $canvas.width(), $canvas.height());
     
     // Se habilita el color de borrado para la pantalla (Color Buffer) y otros buffers
-    gl.clearColor(0.2,0.2,0.2,1);
+    gl.clearColor(0.30,0.65,0.75,1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // Se configura la matriz de proyección
@@ -137,20 +136,31 @@ function tick() {
     }
 
     camera.move(movement);
-//    mat4.rotate(parent, parent,0.03*app.velocidadAngular, [0, 1, 0]);
  
+    Ship.move(ship);
     drawScene();
 }
 
+var water;
+var terrain;
+var bridge;
+var ship;
+
 function crearGeometria(){
-    let plano = new Plane(gl, 100, 100);
-    plano.translate(0, -4, 0);
-    objetos3D.push(plano);
-    let bridge = new Bridge(gl);
+    water = new Plane(gl, 60, 20);
+    water.translate(0, -1+0.25, 0);
+    water.setColor([.33, .70, .93]);
+    objetos3D.push(water);
+
+    terrain = new Terrain(gl);
+    terrain.translate(0, 0.25, 0);
+    objetos3D.push(terrain);
+
+    bridge = new Bridge(gl);
     objetos3D.push(bridge);
 
-    let ship = new Ship(gl, 4);
-    ship.rotateY(Math.PI/2);
+    ship = new Ship(gl, 4);
+    ship.translate(0, -0.5+0.25, 30);
     objetos3D.push(ship);
 }
 
@@ -162,9 +172,8 @@ function dibujarGeometria(){
 
 function initMenu(){
     var gui = new dat.GUI();
-    gui.add(app, "distanciaCamara",0.01,5).step(0.01);
-    gui.add(app, "alturaCamara",-4,4).step(0.01);
-    gui.add(app, "velocidadAngular",0, 1).step(0.01);
+    gui.add(app, "h1",2,6).step(0.01);
+    gui.add(app, "h2",10,20).step(0.01);
 }
 
 function initShaders() {
@@ -192,6 +201,7 @@ function initShaders() {
     shaderProgram.viewMatrixUniform = gl.getUniformLocation(shaderProgram, "viewMatrix");
     shaderProgram.projMatrixUniform = gl.getUniformLocation(shaderProgram, "projMatrix");
     shaderProgram.normalMatrixUniform = gl.getUniformLocation(shaderProgram, "normalMatrix");
+    shaderProgram.vColorUniform = gl.getUniformLocation(shaderProgram, "vColor");
 }
 
 
@@ -286,7 +296,6 @@ document.addEventListener('mousemove', function(event) {
 });
 
 document.addEventListener('wheel', function(event) {
-    console.log(event);
     mouse.zoom -= event.deltaY/1200;
     if(mouse.zoom > 31){
         mouse.zoom = 31;

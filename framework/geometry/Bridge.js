@@ -2,27 +2,47 @@ import { SweepCurve } from "./SweepCurve.js";
 import { System } from "./System.js";
 import { CubicBezier } from "./curves/CubicBezier.js";
 import { QuadraticBezier } from "./curves/QuadraticBezier.js";
+import { MovingSweepCurve } from "./MovingSweepCurve.js"
 
 import { Path } from "./curves/Path.js";
 import { Polygon } from "./polygons/Polygon.js";
 import { Revolution } from "./Revolution.js";
 import { Circumference } from "./curves/Circumference.js";
 
-import { SinTube } from "./SinTube.js";
 import { Cube } from "./Cube.js";
+import { QuadraticBSpline } from "./curves/QuadraticBSpline.js";
+
+let grey =   [.80, .80, .80];
+let red =    [.85, .45, .45];
+let blue =   [.25, .35, 1.0];
+let yellow = [.85, .95, .50];
+let green =  [.35, .70, .40];
 
 export class Ship {
+    static move(ship){
+        let vel = 0.1;
+        ship.translate(0, 0, vel);
+
+        let pos = ship.xyz();
+        if(pos[2] > 30 /* L */) {
+            ship.translate(0, 0, -60);
+        }
+    }
+
     constructor(gl, L=1){
+        let colors = [grey, red, blue, yellow, green];
+
         let hull_lower = new CubicBezier(gl, [[1, 0, 0], [1, -1, 0], [-1, -1, 0], [-1, 0, 0]]);
         let hull_upper = new CubicBezier(gl, [[-1, 0, 0], [-0.5, 0, 0], [0.5, 0, 0], [1, 0, 0]]);
 
         let hull_curve = new Path(gl, [hull_lower, hull_upper]);
         let hull_profile = new Polygon(hull_curve.discretization(0.1));
 
-        let path = new QuadraticBezier(gl, [[0, 0, 0], [L/2, 0, 0], [L, 0, 0]]);
+        let path = new QuadraticBezier(gl, [[0, 0, 0], [0, 0, L/2], [0, 0, L]]);
         path.setBinor(0, 1, 0);
 
         let hull = new SweepCurve(gl, hull_profile, path, 1);
+        hull.setColor(red);
 
         let diff = 1e-1;
         let size = 0.25;
@@ -30,28 +50,29 @@ export class Ship {
             for(let i = 0; i < 5; i++){
                 if(i > 2 && j > 1) continue;
                 let cube = new Cube(gl, size);
-                cube.translate(L/4, size/2+1e-4 + j*size, (i-2)*size);
-                cube.scale(2, 1-diff, 1-diff);
+                cube.translate((i-2)*size, size/2+1e-4 + j*size, L/4);
+                cube.scale(1-diff, 1-diff, 2);
+                const random = Math.floor(Math.random() * colors.length);
+                cube.setColor(colors[random]);
                 hull.addChild(cube);
             }
         }
 
         let cube1 = new Cube(gl, size);
-        cube1.translate(L/10, 3*size/2+1e-4, 0);
-        cube1.scale(1, 3, 5);
+        cube1.translate(0, 3*size/2+1e-4, L/10);
+        cube1.scale(5, 3, 1);
+        cube1.setColor([1, 1, 1]);
 
         hull.addChild(cube1);
 
         let cube2 = new Cube(gl, size);
-        cube2.translate(L/10, 7*size/2+2e-4, 0);
-        cube2.scale(2, 1, 6);
+        cube2.translate(0, 7*size/2+2e-4, L/10);
+        cube2.scale(6, 1, 2);
+        cube2.setColor([1, 1, 1]);
 
         hull.addChild(cube2);
-
         return hull;
     }
-
-//    render(gl, )
 }
 
 export class Bridge {
@@ -62,7 +83,7 @@ export class Bridge {
         let h3 = h2-h1-h0;  // Distance from maxCurveRoad to EndTower
         let a = 0.4;        // startCable = a*h1
 
-        let L = 30;
+        let L = 15;
         let r = 0.5;
         let cable_r = 0.1;
 
@@ -71,6 +92,7 @@ export class Bridge {
         let road = new Road(gl, h1, L);
         road.rotateX(-Math.PI/2);
         sys.addChild(road);
+
 
         let us = Road.getLevel(gl, L, h1, a);
         let L_cable = us[1]-us[0];
@@ -104,6 +126,59 @@ export class Bridge {
         sys.addChild(tower4);
         
         return sys;
+    }
+}
+
+class MovingCurve extends QuadraticBSpline {
+    constructor(gl, controlPoints){
+        super(gl, controlPoints);
+        this.backup = controlPoints.slice();
+        this.i = 0;
+    }
+
+    move(p, a, b, c){
+        return [p[0]+a, p[1]+b, p[2]+c];
+    }
+
+    evaluate(u){
+        if(u < 1e-6){ // is 0
+            this.i++;
+            this.controlPoints = this.backup.slice();
+            let a = 2*Math.sin(0.1*this.i+1234);
+            let b = 1.5*Math.sin(0.2*this.i+2341)-1;
+            let c = 1.7*Math.sin(-0.25*this.i-3412)-1;
+            this.controlPoints[3] = this.move(this.controlPoints[3], a, 0, 0);
+            this.controlPoints[4] = this.move(this.controlPoints[4], a, c, 0);
+            this.controlPoints[5] = this.move(this.controlPoints[5], a, 0, 0);
+            this.controlPoints[6] = this.move(this.controlPoints[6], a, b, 0);
+            this.controlPoints[7] = this.move(this.controlPoints[7], a, 0, 0);
+        }
+
+        return super.evaluate(u);
+    }
+}
+
+export class Terrain {
+    constructor(gl, L=30, L_inner=15, H=3){
+        let p0 = [-L, 0, 0];
+        let p1 = [-L_inner, 0, 0];
+        let p2 = [-L_inner/2, 0, 0];
+        let p3 = [-L_inner/4, -H, 0];
+        let p4 = [0, -H, 0];
+        let p5 = [L_inner/4, -H, 0];
+        let p6 = [L_inner/2, 0, 0];
+        let p7 = [L_inner, 0, 0];
+        let p8 = [L, 0, 0];
+
+        let controlPoints = [p0, p0, p1, p2, p3, p4, p5, p6, p7, p8, p8];
+        let terrain_curve = new MovingCurve(gl, controlPoints);
+
+        let line = new QuadraticBezier(gl, [[0, 0, -L], [0, 0, 0], [0, 0, L]]);
+        line.setBinor(0, 1, 0);
+
+        let t = new MovingSweepCurve(gl, terrain_curve, 0.05, line, 0.01, false);
+        t.setColor(green);
+        return t;
     }
 }
 
@@ -175,7 +250,9 @@ class Tower {
 
         let path = new Path(gl, [line1, curve1, line2, curve2, line3]);
 
-        return Revolution.fromCurve(gl, 10, path, 0.05);
+        let t = Revolution.fromCurve(gl, 10, path, 0.05);
+        t.setColor(red);
+        return t;
     }
 }
 
@@ -192,6 +269,8 @@ class Cable {
         let circ = new Circumference(r);
         let circ_profile = new Polygon(circ.discretization(0.25));
 
-        return new SweepCurve(gl, circ_profile, curve, 0.01);
+        let c = new SweepCurve(gl, circ_profile, curve, 0.01);
+        c.setColor(red);
+        return c;
     }
 }

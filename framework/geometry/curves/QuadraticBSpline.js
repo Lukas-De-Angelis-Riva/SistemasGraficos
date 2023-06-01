@@ -14,4 +14,22 @@ export class QuadraticBSpline extends BasedCurve {
         let dbases = [QuadraticBSpline.dB0, QuadraticBSpline.dB1, QuadraticBSpline.dB2];
         super(gl, bases, dbases, controlPoints);
     }
+
+    evaluate(u){
+        if(this.controlPoints.length == 3){
+            return super.evaluate(u);
+        }
+        let i = Math.floor(u);
+        if(i == this.length()){
+            i--;
+        }
+        let points_i = [this.controlPoints[i], this.controlPoints[i+1], this.controlPoints[i+2]];
+        let curve_i = new QuadraticBSpline(this.gl, points_i);
+        curve_i.setBinor(this.binor[0], this.binor[1], this.binor[2]);
+        return curve_i.evaluate(u-i);
+    }
+
+    length(){
+        return this.controlPoints.length-2;
+    }
 }

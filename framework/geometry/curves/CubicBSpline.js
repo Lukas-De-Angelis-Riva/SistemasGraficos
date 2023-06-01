@@ -16,4 +16,24 @@ export class CubicBSpline extends BasedCurve {
         let dbases = [CubicBSpline.dB0, CubicBSpline.dB1, CubicBSpline.dB2, CubicBSpline.dB3];
         super(gl, bases, dbases, controlPoints);
     }
+
+    evaluate(u){
+        if(this.controlPoints.length == 4){
+            return super.evaluate(u);
+        }
+        let i = Math.floor(u);
+        if(i == this.length()){
+            i--;
+        }
+
+        let points_i = [this.controlPoints[i], this.controlPoints[i+1],
+                        this.controlPoints[i+2], this.controlPoints[i+3]];
+        let curve_i = new CubicBSpline(this.gl, points_i);
+        curve_i.setBinor(this.binor[0], this.binor[1], this.binor[2]);
+        return curve_i.evaluate(u-i);
+    }
+
+    length(){
+        return this.controlPoints.length-3;
+    }
 }

@@ -20,6 +20,7 @@ export class Object3D {
 
         this.modelMatrix = mat4.identity(mat4.create());
 
+        this.color=[0.7, 0.7, 0.7];
         this.childs = [];
     }
 
@@ -36,6 +37,11 @@ export class Object3D {
     /// Override
     getTextureCordenates(u, v) {
         return(0, 0)
+    }
+
+    /// Override
+    setColor(color) {
+        this.color = color;
     }
 
     initBuffers() {
@@ -126,6 +132,8 @@ export class Object3D {
         gl.uniformMatrix4fv(shaderProgram.modelMatrixUniform, false, m);
         gl.uniformMatrix4fv(shaderProgram.normalMatrixUniform, false, normalMatrix);
 
+        // color
+        gl.uniform3f(shaderProgram.vColorUniform, this.color[0],this.color[1],this.color[2]);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_position_buffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, this.webgl_position_buffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -240,5 +248,10 @@ export class Object3D {
     translate(xt, yt, zt){
         let t = vec3.fromValues(xt, yt, zt);
         mat4.translate(this.modelMatrix, this.modelMatrix, t);
+    }
+
+    xyz(){
+        const m = this.modelMatrix;
+        return [m[12], m[13], m[14]];
     }
 }

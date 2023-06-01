@@ -10,13 +10,6 @@ export class BasedCurve {
         this.controlPoints = controlPoints;
         this.binor = vec3.fromValues(0, 0, 1);
     }
-    
-    addControlPoint(p){
-        if(this.controlPoints.length >= this.bases.length){
-            throw new Error('Too many contron points.');
-        }
-        this.controlPoints.push(p);
-    }
 
     setBinor(x, y, z){
         this.binor = vec3.fromValues(x,y,z);
@@ -50,9 +43,8 @@ export class BasedCurve {
 
     discretization(step) {
         var points = [];
-        for(let u=0; u<=1+step/2; u+=step){
+        for(let u=0; u<=this.length()+step/2; u+=step){
             points.push(this.evaluate(u));
-            console.log(points);
         }
         return points;
     }

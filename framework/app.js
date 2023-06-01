@@ -1,6 +1,6 @@
 import { Plane } from './geometry/Plane.js';
 import { Camera } from './Camera.js';
-import { Bridge } from './geometry/Bridge.js';
+import { Bridge, Ship } from './geometry/Bridge.js';
 
 var time=0;
 
@@ -149,6 +149,9 @@ function crearGeometria(){
     let bridge = new Bridge(gl);
     objetos3D.push(bridge);
 
+    let ship = new Ship(gl, 4);
+    ship.rotateY(Math.PI/2);
+    objetos3D.push(ship);
 }
 
 function dibujarGeometria(){
@@ -198,7 +201,7 @@ function webGLStart() {
     
     initShaders();
 
-    camera = new Camera(gl);
+    camera = new Camera(gl, 16, 13, 24);
 
     crearGeometria();
 
@@ -258,20 +261,8 @@ document.addEventListener('keyup', function(event) {
     if(event.key == 'ArrowLeft') movement.turnleft = false;
     if(event.key == 'ArrowUp') movement.turnup = false;
     if(event.key == 'ArrowDown') movement.turndown = false;
-});
 
-document.addEventListener('keyup', function(event) {
-    if(event.key == 'a') movement.left = false;
-    if(event.key == 's') movement.back = false;
-    if(event.key == 'd') movement.right = false;
-    if(event.key == 'w') movement.front = false;
-    if(event.key == ' ') movement.up = false;
-    if(event.key == 'z') movement.down = false;
-
-    if(event.key == 'ArrowRight') movement.turnright = false;
-    if(event.key == 'ArrowLeft') movement.turnleft = false;
-    if(event.key == 'ArrowUp') movement.turnup = false;
-    if(event.key == 'ArrowDown') movement.turndown = false;
+    if(event.key == 'x') console.log(camera);
 });
 
 document.addEventListener('mousedown', function(event) {

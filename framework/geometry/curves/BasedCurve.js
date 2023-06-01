@@ -8,6 +8,7 @@ export class BasedCurve {
         this.bases = bases;
         this.dbases = dbases;
         this.controlPoints = controlPoints;
+        this.binor = vec3.fromValues(0, 0, 1);
     }
     
     addControlPoint(p){
@@ -17,10 +18,14 @@ export class BasedCurve {
         this.controlPoints.push(p);
     }
 
+    setBinor(x, y, z){
+        this.binor = vec3.fromValues(x,y,z);
+    }
+
     evaluate(u){
         let pos = vec3.create();
         let tan = vec3.create();
-        let binor = vec3.fromValues(0, 0, 1);
+        let binor = this.binor;
 
         for(let i=0; i < this.controlPoints.length; i++){
             let p = this.controlPoints[i];

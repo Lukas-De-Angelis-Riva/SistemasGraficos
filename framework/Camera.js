@@ -8,9 +8,9 @@ export class Camera {
         this.ViewMatrix = mat4.create();
 
         this.position = vec3.fromValues(xStart, yStart, zStart);
-        this.front_v = vec3.fromValues(0, 0, -1);
-        this.up = vec3.fromValues(0, 1, 0);
-        this.left = vec3.fromValues(1, 0, 0);
+        this.front_v = vec3.fromValues(-0.14543378353118896, -0.1358306109905243, -0.7312567830085754);
+        this.up = vec3.fromValues(-0.05499078705906868, 0.989517092704773, -0.13353519141674042);
+        this.left = vec3.fromValues(0.9878383874893188, -0.04904782027006149, -0.6689016819000244);
 
         let viewPoint = vec3.create();
         vec3.add(viewPoint, this.position, this.front_v);

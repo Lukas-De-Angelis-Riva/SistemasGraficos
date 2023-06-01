@@ -6,10 +6,11 @@ export class Path {
     }
 
     evaluate(u){
+        let delta = 1e-6;
         let prev = 0;
         for(let i=0; i < this.curves.length; i++){
             let curve_i = this.curves[i];
-            if(prev <= u && u <= prev+curve_i.length()){
+            if(prev <= u && u <= prev+curve_i.length() + delta){
                 return this.curves[i].evaluate(u-prev);
             }else{
                 prev+=curve_i.length();

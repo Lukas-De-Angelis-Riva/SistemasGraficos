@@ -142,7 +142,7 @@ export class Object3D {
         //gl.drawElements(gl.LINE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
 
         // Activar o desactivar si se quieren (o no) ver las normales
-        this.renderNormal(shaderProgram);
+        // this.renderNormal(shaderProgram);
         //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         this.childs.forEach((o, i) => o.render(shaderProgram, m));
@@ -210,7 +210,7 @@ export class Object3D {
         let s = vec3.fromValues(xs, ys, zs);
         mat4.scale(this.modelMatrix, this.modelMatrix, s);
     }
-    /// 
+    ///
     hscale(s){
         this.scale(s,s,s);
     }

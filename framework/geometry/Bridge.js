@@ -23,7 +23,7 @@ export class Ship {
         path.setBinor(0, 1, 0);
 
         let hull = new SweepCurve(gl, hull_profile, path, 1);
-        
+
         let diff = 1e-1;
         let size = 0.25;
         for(let j = 0; j < 3; j++){

@@ -1,6 +1,7 @@
 import { Plane } from './geometry/Plane.js';
 import { Camera } from './Camera.js';
 import { Bridge, Ship } from './geometry/Bridge.js';
+import { Cube } from './geometry/Cube.js';
 
 var time=0;
 
@@ -145,7 +146,6 @@ function crearGeometria(){
     let plano = new Plane(gl, 100, 100);
     plano.translate(0, -4, 0);
     objetos3D.push(plano);
-
     let bridge = new Bridge(gl);
     objetos3D.push(bridge);
 

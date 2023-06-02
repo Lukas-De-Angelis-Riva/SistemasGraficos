@@ -1,5 +1,5 @@
 import { Plane } from './geometry/Plane.js';
-import { Camera, FollowerCamera } from './Camera.js';
+import { DronCamera, FollowerCamera, OrbitalCamera } from './Camera.js';
 import { Bridge, Ship, Terrain, TreeGenerator } from './geometry/World.js';
 import { Cube } from './geometry/Cube.js';
 
@@ -37,6 +37,9 @@ var matrizProyeccion = mat4.create();
 var parent = mat4.identity(mat4.create());
 
 var camera;
+var dronCamera;
+var orbitalCamera;
+var followerCamera;
 
 function loadShaders(){
 
@@ -172,7 +175,7 @@ function crearGeometria(){
     ship = new Ship(gl, 4);
     ship.translate(0, H+0.25, app.L_terrain-3.5);
 
-    camera = new FollowerCamera(gl, [0, 2, -5], ship);
+    followerCamera = new FollowerCamera(gl, [0, 2, -5], ship);
 }
 
 function dibujarGeometria(){
@@ -242,14 +245,16 @@ function initShaders() {
     shaderProgram.vColorUniform = gl.getUniformLocation(shaderProgram, "vColor");
 }
 
-
 function webGLStart() {
     var canvas = document.getElementById("myCanvas");
     initGL(canvas);
     
     initShaders();
 
-    // camera = new Camera(gl, 16, 13, 24);
+    dronCamera = new DronCamera(gl, 16, 13, 24);
+    orbitalCamera = new OrbitalCamera(gl, 20, 0, Math.PI/4);
+    
+    camera = dronCamera;
 
     crearGeometria();
 
@@ -284,6 +289,10 @@ movement.turnleft = false;
 movement.turnright = false;
 
 document.addEventListener('keydown', function(event) {
+    if(event.key == '1') camera = orbitalCamera;
+    if(event.key == '2') camera = dronCamera;
+    if(event.key == '3') camera = followerCamera;
+
     if(event.key == 'a') movement.left = true;
     if(event.key == 's') movement.back = true;
     if(event.key == 'd') movement.right = true;

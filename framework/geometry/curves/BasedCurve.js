@@ -9,6 +9,7 @@ export class BasedCurve {
         this.dbases = dbases;
         this.controlPoints = controlPoints;
         this.binor = vec3.fromValues(0, 0, 1);
+        this._length = 1;
     }
 
     setBinor(x, y, z){
@@ -16,6 +17,7 @@ export class BasedCurve {
     }
 
     evaluate(u){
+        u = u/this.length();
         let pos = vec3.create();
         let tan = vec3.create();
         let binor = this.binor;
@@ -50,6 +52,10 @@ export class BasedCurve {
     }
 
     length(){
-        return 1;
+        return this._length;
+    }
+
+    setLength(l){
+        this._length = l;
     }
 }

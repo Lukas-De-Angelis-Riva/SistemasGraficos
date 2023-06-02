@@ -27,7 +27,7 @@ export class Path {
     }
 
     length(){
-        return this._length;
+        return this.curves.reduce((partial, c) => partial+c.length(), 0);
     }
 
     setBinor(x,y,z){

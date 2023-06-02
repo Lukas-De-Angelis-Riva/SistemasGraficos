@@ -79,7 +79,7 @@ export class Ship {
 }
 
 export class Bridge {
-    constructor(gl, h1=4, h2=14, a=0.4, L_road_line = 15, L_road_curve=30){
+    constructor(gl, h1=4, h2=14, a=0.4, L_road_line = 15, L_road_curve=30, s1=1){
         let h0 = 2.5;       // distance from startTower to minRoad
         // h1               // distance from minRoad to maxCurveRoad
         // h2               // Total heigth of the tower
@@ -93,24 +93,39 @@ export class Bridge {
         let r = 0.5;        // radius of towers
         let cable_r = 0.1;  // radius of cable
 
-
         let sys = new System(gl);
 
         let road = new Road(gl, h1, L_road_line, L_road_curve, W_road);
         sys.addChild(road);
 
-
         let us = Road.getLevel(gl, L_road_curve, h1, a);
-        let L_cable = us[1]-us[0];
+        let L_cable = Road.getXY(gl, us[1], L_road_curve, h1)[0]
+                    - Road.getXY(gl, us[0], L_road_curve, h1)[0];
 
         //                                      +0.5 to get into the road.
-        let cable1 = new Cable(gl, L_cable, a*h1+0.5, h3+(1-a)*h1-1, cable_r);
-        cable1.translate(0, 0, W_road/2-cable_r);
+        let cable1 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r);
+        cable1.translate(0, a*h1+0.5, W_road/2-cable_r);
         sys.addChild(cable1);
 
-        let cable2 = new Cable(gl, L_cable, a*h1+0.5, h3+(1-a)*h1-1, cable_r);
-        cable2.translate(0, 0, -W_road/2+cable_r);
+        let cable2 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r);
+        cable2.translate(0, a*h1+0.5, -W_road/2+cable_r);
         sys.addChild(cable2);
+
+        let circ = new Circle(0.05, 4 /*div*/);
+
+        let startCable = Road.getXY(gl, us[0], L_road_curve, h1)[0];
+        let endCable = Road.getXY(gl, us[1], L_road_curve, h1)[0];
+        for(let x0 = startCable; x0 < endCable; x0+=s1){
+            let up_y = Cable.getY(gl, x0, L_cable, h3+(1-a)*h1-1)
+            let do_y = Road.getY(gl, x0, L_road_curve, h1);
+
+            let line = new Line(gl, [x0, do_y-(a*h1+0.5), 0], [x0, up_y, 0]);
+            let vsuspender = new SweepCurve(gl, circ, line, 1, false);
+
+            vsuspender.setColor(red);
+            cable1.addChild(vsuspender);
+            cable2.addChild(vsuspender);
+        }
 
         let tower1 = new Tower(gl, r, h2);
         tower1.translate(-2*L_cable/10, -h0, W_road/2-cable_r);
@@ -266,10 +281,26 @@ class Road {
 
         let u1 = (1-Math.sqrt(1-4*h/3))/2;
         let u2 = (1+Math.sqrt(1-4*h/3))/2;
+        return [u1, u2];
+    }
 
-        let p1 = path2.evaluate(u1);
-        let p2 = path2.evaluate(u2);
-        return [p1.x, p2.x];
+    static getXY(gl, u, L, h1){
+        let path2 = new CubicBezier(gl, [[-L/2, 0, 0], [-L/4, h1, 0], [L/4, h1, 0], [L/2, 0, 0]]);
+        path2.setBinor(0, 1, 0);
+        let p = path2.evaluate(u);
+        return [p.x, p.y];
+    }
+
+    static getY(gl, x0, L, h1) {
+        let path2 = new CubicBezier(gl, [[-L/2, 0, 0], [-L/4, h1, 0], [L/4, h1, 0], [L/2, 0, 0]]);
+        let disc = path2.discretization(0.01);
+
+        for(let i = 0; i < disc.length; i++){
+            if(disc[i].x >= x0){
+                return disc[i].y
+            }
+        }
+        return 1;
     }
 }
 
@@ -316,9 +347,7 @@ class Tower {
 class Cable {
     constructor(gl, L, startY, H, r){
         let curve1 = new QuadraticBezier(gl, [[-L/2, startY, 0], [-3*L/10, startY, 0], [-2*L/10, startY+H, 0]]);
-
         let curve2 = new QuadraticBezier(gl, [[-2*L/10, startY+H, 0], [0, startY-H/3, 0], [2*L/10, startY+H, 0]]);
-
         let curve3 = new QuadraticBezier(gl, [[2*L/10, startY+H, 0], [3*L/10, startY, 0], [L/2, startY, 0]]);
         
         let curve = new Path(gl, [curve1, curve2, curve3]);
@@ -329,6 +358,40 @@ class Cable {
         let c = new SweepCurve(gl, circ_profile, curve, 0.01);
         c.setColor(red);
         return c;
+    }
+    // h from 0 to 1 (high = h * h1s)
+    static getXY(gl, u, L, H){
+        if(u <= 1){
+            let curve1 = new QuadraticBezier(gl, [[-L/2, 0, 0], [-3*L/10, 0, 0], [-2*L/10, 0+H, 0]]);
+            let p = curve1.evaluate(u);
+            return [p.x, p.y];
+        } else if (u <= 2) {
+            u -= 1;
+            let curve2 = new QuadraticBezier(gl, [[-2*L/10, H, 0], [0, -H/3, 0], [2*L/10, H, 0]]);
+            let p = curve2.evaluate(u);
+            return [p.x, p.y];
+        }
+        u -= 2;
+        let curve3 = new QuadraticBezier(gl, [[2*L/10, 0+H, 0], [3*L/10, 0, 0], [L/2, 0, 0]]);
+        let p = curve3.evaluate(u);
+        return [p.x, p.y];
+    }
+    
+    static getY(gl, x0, L, H) {
+        let curve1 = new QuadraticBezier(gl, [[-L/2, 0, 0], [-3*L/10, 0, 0], [-2*L/10, H, 0]]);
+        let curve2 = new QuadraticBezier(gl, [[-2*L/10, H, 0], [0, -H/3, 0], [2*L/10, H, 0]]);
+        let curve3 = new QuadraticBezier(gl, [[2*L/10, H, 0], [3*L/10, 0, 0], [L/2, 0, 0]]);
+        
+        let curve = new Path(gl, [curve1, curve2, curve3]);
+        let disc = curve.discretization(0.01);
+
+        for(let i = 0; i < disc.length; i++){
+            if(disc[i].x >= x0){
+                return disc[i].y
+            }
+        }
+        return 1;
+
     }
 }
 

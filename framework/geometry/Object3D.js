@@ -1,6 +1,7 @@
 var mat4=glMatrix.mat4;
 var mat3=glMatrix.mat3;
 var vec3=glMatrix.vec3;
+var vec4=glMatrix.vec4;
 
 export class Object3D {
     constructor(gl, rows, columns) {
@@ -254,5 +255,15 @@ export class Object3D {
     xyz(){
         const m = this.modelMatrix;
         return [m[12], m[13], m[14]];
+    }
+
+    relative(xyz){
+        const m = this.modelMatrix;
+        let transform = vec4.create();
+        let xyz1 = vec4.fromValues(xyz[0], xyz[1], xyz[2], 1.0);
+
+        vec4.transformMat4(transform, xyz1, m);
+    
+        return [transform[0], transform[1], transform[2]];
     }
 }

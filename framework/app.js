@@ -1,5 +1,5 @@
 import { Plane } from './geometry/Plane.js';
-import { Camera } from './Camera.js';
+import { Camera, FollowerCamera } from './Camera.js';
 import { Bridge, Ship, Terrain, TreeGenerator } from './geometry/World.js';
 import { Cube } from './geometry/Cube.js';
 
@@ -37,8 +37,6 @@ var matrizProyeccion = mat4.create();
 var parent = mat4.identity(mat4.create());
 
 var camera;
-
-var objetos3D = [];
 
 function loadShaders(){
 
@@ -147,7 +145,7 @@ function tick() {
 
     camera.move(movement);
  
-    Ship.move(ship, app.L_terrain);
+    Ship.move(ship, app.L_terrain-3.5);
     drawScene();
 }
 
@@ -155,7 +153,6 @@ var water;
 var terrain;
 var bridge;
 var ship;
-
 var trees;
 
 function crearGeometria(){
@@ -173,7 +170,9 @@ function crearGeometria(){
     bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, app.L_road_line, app.L_road_curve, app.s1);
 
     ship = new Ship(gl, 4);
-    ship.translate(0, H+0.25, app.L_terrain);
+    ship.translate(0, H+0.25, app.L_terrain-3.5);
+
+    camera = new FollowerCamera(gl, [0, 2, -5], ship);
 }
 
 function dibujarGeometria(){
@@ -250,7 +249,7 @@ function webGLStart() {
     
     initShaders();
 
-    camera = new Camera(gl, 16, 13, 24);
+    // camera = new Camera(gl, 16, 13, 24);
 
     crearGeometria();
 

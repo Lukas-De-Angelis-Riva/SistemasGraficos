@@ -2,6 +2,36 @@ var mat4=glMatrix.mat4;
 var vec4=glMatrix.vec4;
 var vec3=glMatrix.vec3;
 
+export class FollowerCamera {
+    constructor(gl, xyz, followingObject){
+        this.gl = gl;
+        this.followingObject = followingObject;
+        this.xyz = xyz;
+        this.up = [0, 1, 0];
+    }
+
+    look(shaderProgram){
+        const gl = this.gl;
+        
+        let viewPoint = this.followingObject.relative([0,0,0]);
+        let position = this.followingObject.relative(this.xyz);
+
+        let ViewMatrix = mat4.create();
+        mat4.lookAt(ViewMatrix,
+            position,
+            viewPoint,
+            this.up
+        );
+        gl.uniformMatrix4fv(shaderProgram.viewMatrixUniform, false, ViewMatrix);
+    }
+
+    turnSide(rad){}
+
+    tunrUp(rad){}
+
+    move(movement){}
+}
+
 export class Camera {
     constructor(gl, xStart = 0, yStart = 0, zStart = 3) {
         this.gl = gl;
@@ -45,7 +75,7 @@ export class Camera {
     }
 
     moveUp(delta){
-        vec3.scaleAndAdd(this.position, this.position, this.up, delta);   
+        vec3.scaleAndAdd(this.position, this.position, this.up, delta);
     }
 
     turnSide(rad){

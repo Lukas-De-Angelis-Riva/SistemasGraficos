@@ -15,8 +15,8 @@ import { Cube } from "./Cube.js";
 import { QuadraticBSpline } from "./curves/QuadraticBSpline.js";
 
 let grey =   [.80, .80, .80];
-let red =    [.85, .45, .45];
-let blue =   [.25, .35, 1.0];
+let red =    [.75, 0.0, 0.0];
+let blue =   [0.0, 0.0, .75];
 let yellow = [.85, .95, .50];
 let green =  [.35, .70, .40];
 let seagreen = [46/255, 139/255, 87/255]; 
@@ -64,14 +64,14 @@ export class Ship {
         let cube1 = new Cube(gl, size);
         cube1.translate(0, 3*size/2+1e-4, L/10);
         cube1.scale(5, 3, 1);
-        cube1.setColor([1, 1, 1]);
+        cube1.setColor(red);
 
         hull.addChild(cube1);
 
         let cube2 = new Cube(gl, size);
         cube2.translate(0, 7*size/2+2e-4, L/10);
         cube2.scale(6, 1, 2);
-        cube2.setColor([1, 1, 1]);
+        cube2.setColor(red);
 
         hull.addChild(cube2);
         return hull;

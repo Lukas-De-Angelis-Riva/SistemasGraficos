@@ -20,6 +20,7 @@ export class Object3D {
         this.uvBuffer = [];
 
         this.modelMatrix = mat4.identity(mat4.create());
+        this.modelMatrix_withoutScaling = mat4.identity(mat4.create());
 
         this.color=[0.7, 0.7, 0.7];
         this.childs = [];
@@ -127,7 +128,9 @@ export class Object3D {
         mat4.multiply(m, parentMatrix, this.modelMatrix);
 
         let normalMatrix = mat4.create();
-        mat4.invert(normalMatrix, m);
+        let m_withoutScaling = mat4.create();
+        mat4.multiply(m_withoutScaling, parentMatrix, this.modelMatrix_withoutScaling);
+        mat4.invert(normalMatrix, m_withoutScaling);
         mat4.transpose(normalMatrix, normalMatrix);
 
         gl.uniformMatrix4fv(shaderProgram.modelMatrixUniform, false, m);
@@ -151,8 +154,9 @@ export class Object3D {
         //gl.drawElements(gl.LINE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
 
         // Activar o desactivar si se quieren (o no) ver las normales
-        if (showNormals)
-            this.renderNormal(shaderProgram);
+        if (showNormals){
+            this.renderNormal(shaderProgram, parentMatrix);
+        }
         //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         this.childs.forEach((o, i) => o.render(shaderProgram, m, showNormals));
@@ -200,7 +204,6 @@ export class Object3D {
         gl.enableVertexAttribArray( shaderProgram.vertexPositionAttribute );
 
         gl.drawArrays( gl.LINES, 0, vertex_buffer.numItems );
-
     }
 
     addChild(anObject3D){
@@ -230,18 +233,22 @@ export class Object3D {
     ///
     rotate(rad, axis){
         mat4.rotate(this.modelMatrix, this.modelMatrix, rad, axis);
+        mat4.rotate(this.modelMatrix_withoutScaling, this.modelMatrix_withoutScaling, rad, axis);
     }
     ///
     rotateX(rad){
         mat4.rotateX(this.modelMatrix, this.modelMatrix, rad);
+        mat4.rotateX(this.modelMatrix_withoutScaling, this.modelMatrix_withoutScaling, rad);
     }
     ///
     rotateY(rad){
         mat4.rotateY(this.modelMatrix, this.modelMatrix, rad);
+        mat4.rotateY(this.modelMatrix_withoutScaling, this.modelMatrix_withoutScaling, rad);
     }
     ///
     rotateZ(rad){
         mat4.rotateZ(this.modelMatrix, this.modelMatrix, rad);
+        mat4.rotateZ(this.modelMatrix_withoutScaling, this.modelMatrix_withoutScaling, rad);
     }
 
     ///
@@ -250,6 +257,7 @@ export class Object3D {
     translate(xt, yt, zt){
         let t = vec3.fromValues(xt, yt, zt);
         mat4.translate(this.modelMatrix, this.modelMatrix, t);
+        mat4.translate(this.modelMatrix_withoutScaling, this.modelMatrix_withoutScaling, t);
     }
 
     xyz(){

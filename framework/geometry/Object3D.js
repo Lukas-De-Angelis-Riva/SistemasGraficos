@@ -117,7 +117,7 @@ export class Object3D {
         this.webgl_index_buffer.numItems = indexBuffer.length;
     }
 
-    render(shaderProgram, parentMatrix=null) {
+    render(shaderProgram, parentMatrix=null, showNormals=false) {
         const gl = this.gl;
         if(!parentMatrix)
             parentMatrix = mat4.identity(mat4.create());
@@ -150,10 +150,11 @@ export class Object3D {
         //gl.drawElements(gl.LINE_STRIP, this.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
 
         // Activar o desactivar si se quieren (o no) ver las normales
-        this.renderNormal(shaderProgram);
+        if (showNormals)
+            this.renderNormal(shaderProgram);
         //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-        this.childs.forEach((o, i) => o.render(shaderProgram, m));
+        this.childs.forEach((o, i) => o.render(shaderProgram, m, showNormals));
     }
 
     renderNormal(shaderProgram){

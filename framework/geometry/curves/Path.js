@@ -29,4 +29,8 @@ export class Path {
     length(){
         return this._length;
     }
+
+    setBinor(x,y,z){
+        this.curves.map(c => c.setBinor(x,y,z));
+    }
 }

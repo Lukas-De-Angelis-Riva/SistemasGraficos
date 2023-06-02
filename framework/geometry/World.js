@@ -4,7 +4,7 @@ import { CubicBezier } from "./curves/CubicBezier.js";
 import { Line } from "./curves/Line.js";
 import { QuadraticBezier } from "./curves/QuadraticBezier.js";
 import { MovingSweepCurve } from "./MovingSweepCurve.js"
-
+import { Circle } from "./polygons/Circle.js";
 import { Path } from "./curves/Path.js";
 import { Polygon } from "./polygons/Polygon.js";
 import { Revolution } from "./Revolution.js";
@@ -18,15 +18,17 @@ let red =    [.85, .45, .45];
 let blue =   [.25, .35, 1.0];
 let yellow = [.85, .95, .50];
 let green =  [.35, .70, .40];
+let seagreen = [46/255, 139/255, 87/255]; 
+let brown =  [165/255,42/255,42/255];
 
 export class Ship {
-    static move(ship){
+    static move(ship, L=30){
         let vel = 0.075;
         ship.translate(0, 0, vel);
 
         let pos = ship.xyz();
-        if(pos[2] > 30 /* L */) {
-            ship.translate(0, 0, -60);
+        if(pos[2] > L) {
+            ship.translate(0, 0, -2*L);
         }
     }
 
@@ -76,55 +78,59 @@ export class Ship {
 }
 
 export class Bridge {
-    constructor(gl, h1=4, h2=14){
+    constructor(gl, h1=4, h2=14, a=0.4, L_road_line = 15, L_road_curve=30){
         let h0 = 2.5;       // distance from startTower to minRoad
         // h1               // distance from minRoad to maxCurveRoad
         // h2               // Total heigth of the tower
         let h3 = h2-h1-h0;  // Distance from maxCurveRoad to EndTower
-        let a = 0.4;        // startCable = a*h1
+        // a                // startCable = a*h1
 
-        let L = 15;
-        let r = 0.5;
-        let cable_r = 0.1;
+        // let L_road_line = 15;    // Length of the road
+        // let L_road_curve = 30;    // Length of the road
+        let W_road = 4;    // Width of the road 
+
+        let r = 0.5;        // radius of towers
+        let cable_r = 0.1;  // radius of cable
+
 
         let sys = new System(gl);
 
-        let road = new Road(gl, h1, L);
-        road.rotateX(-Math.PI/2);
+        let road = new Road(gl, h1, L_road_line, L_road_curve, W_road);
         sys.addChild(road);
 
 
-        let us = Road.getLevel(gl, L, h1, a);
+        let us = Road.getLevel(gl, L_road_curve, h1, a);
         let L_cable = us[1]-us[0];
 
+        //                                      +0.5 to get into the road.
         let cable1 = new Cable(gl, L_cable, a*h1+0.5, h3+(1-a)*h1-1, cable_r);
-        cable1.translate(0, 0, 3-cable_r);
+        cable1.translate(0, 0, W_road/2-cable_r);
         sys.addChild(cable1);
 
         let cable2 = new Cable(gl, L_cable, a*h1+0.5, h3+(1-a)*h1-1, cable_r);
-        cable2.translate(0, 0, -3+cable_r);
+        cable2.translate(0, 0, -W_road/2+cable_r);
         sys.addChild(cable2);
 
         let tower1 = new Tower(gl, r, h2);
-        tower1.translate(-2*L_cable/10, -2.5, 3-cable_r);
+        tower1.translate(-2*L_cable/10, -h0, W_road/2-cable_r);
         tower1.rotateX(Math.PI/2);
         sys.addChild(tower1);
-    
+
         let tower2 = new Tower(gl, r, h2);
-        tower2.translate(-2*L_cable/10, -2.5, -3+cable_r);
+        tower2.translate(-2*L_cable/10, -h0, -W_road/2+cable_r);
         tower2.rotateX(Math.PI/2);
         sys.addChild(tower2);
-    
+
         let tower3 = new Tower(gl, r, h2);
-        tower3.translate(2*L_cable/10, -2.5, 3-cable_r);
+        tower3.translate(2*L_cable/10, -h0, W_road/2-cable_r);
         tower3.rotateX(Math.PI/2);
         sys.addChild(tower3);
-    
+
         let tower4 = new Tower(gl, r, h2);
-        tower4.translate(2*L_cable/10, -2.5, -3+cable_r);
+        tower4.translate(2*L_cable/10, -h0, -W_road/2+cable_r);
         tower4.rotateX(Math.PI/2);
         sys.addChild(tower4);
-        
+
         return sys;
     }
 }
@@ -179,7 +185,12 @@ export class Terrain {
 
         let controlPoints = [p0, p0_, p1, p2, p3, p4, p5, p6, p7, p8_, p8];
         let terrain_curve = new TerrainCurve(gl, controlPoints);
-
+        /*
+        let right = new Line(gl, [L, 0, 0], [L, -3*H, 0]);
+        let bottom = new Line(gl, [L, -3*H, 0], [-L, -3*H, 0]);
+        let left = new Line(gl, [-L, -3*H, 0], [-L, 0, 0]);
+        let terrain_path = new Path(gl, [terrain_curve, right, bottom, left]);
+        */
         let line = new Line(gl, [0, 0, -L], [0, 0, L]);
         line.setBinor(0, 1, 0);
 
@@ -190,13 +201,12 @@ export class Terrain {
 }
 
 class Road {
-    constructor(gl, h1 = 2, L=10) {
+    constructor(gl, h1 = 2, L_line=5, L_curve=5, A=6) {
         let m1x = function(p){
             return [-p[0], p[1], p[2]];
         }
 
-        let h = 0.25;
-        let A = 6;
+        let h = 0.25/6 * A;
         let J = A/2 - h;
         let thickness = 0.5;
         let sidewalk_thickness = 0.25;
@@ -239,17 +249,19 @@ class Road {
         profile_array = profile_array.concat(profile8.discretization(1));
         this.profile = new Polygon(profile_array);
 
-        let path1 = new CubicBezier(gl, [[-2*L, 0, 0], [-2*L+1, 0, 0], [-L-1, 0, 0], [-L, 0, 0]]);
-        let path2 = new CubicBezier(gl, [[-L, 0, 0], [-L/2, 0, h1], [L/2, 0, h1], [L, 0, 0]]);
-        let path3 = new CubicBezier(gl, [[L, 0, 0], [L+1, 0, 0], [2*L-1, 0, 0], [2*L, 0, 0]]);
-        this.path = new Path(gl, [path1, path2, path3]);
+        let path1 = new Line(gl, [-L_line-L_curve/2, 0, 0], [-L_curve/2, 0, 0]);
+        let path2 = new CubicBezier(gl, [[-L_curve/2, 0, 0], [-L_curve/4, h1, 0], [L_curve/4, h1, 0], [L_curve/2, 0, 0]]);
+        let path3 = new Line(gl, [L_curve/2, 0, 0], [L_line+L_curve/2, 0, 0]);
 
-        return new SweepCurve(gl, this.profile, this.path, 0.05, false);
+        this.path = new Path(gl, [path1, path2, path3]);
+        this.path.setBinor(0,1,0);
+        return new SweepCurve(gl, this.profile, this.path, 0.1, false);
     }
 
     // h from 0 to 1 (high = h * h1s)
     static getLevel(gl, L, h1, h){
-        let path2 = new CubicBezier(gl, [[-L, 0, 0], [-L/2, 0, h1], [L/2, 0, h1], [L, 0, 0]]);
+        let path2 = new CubicBezier(gl, [[-L/2, 0, 0], [-L/4, h1, 0], [L/4, h1, 0], [L/2, 0, 0]]);
+        path2.setBinor(0, 1, 0);
 
         let u1 = (1-Math.sqrt(1-4*h/3))/2;
         let u2 = (1+Math.sqrt(1-4*h/3))/2;
@@ -263,7 +275,7 @@ class Road {
 class Tower {
     constructor(gl, r=1, h2=10) {
         let line_h = 0.30;
-        let curve_h = 0.05; // (1 - 3·line_h)/2
+        let curve_h = (1-3*line_h)/2;
 
         let line1 = new Line(gl, [r, 0, 0], [r, h2*line_h, 0]);
         line1.setBinor(0, 0, -1);
@@ -316,5 +328,34 @@ class Cable {
         let c = new SweepCurve(gl, circ_profile, curve, 0.01);
         c.setColor(red);
         return c;
+    }
+}
+
+export class Tree {
+    constructor(gl, r, h){
+        let circ = new Circle(1, 20 /*div*/);
+        let trunk_path = new Line(gl, [0,-0.5,0], [0, 0.5, 0]);
+        trunk_path.setBinor(0, 0, 1);
+        let trunk = new SweepCurve(gl, circ, trunk_path, 1, true);
+        trunk.setColor(brown);
+
+        let p0 = [1, 0.5, 0]; let p1 = [3/2, 1, 0]; let p1_ = [3/2+1e-6, 1, 0];
+        let p2 = [1, 2, 0];
+        let p3 = [1/6, 4, 0]; let p4 = [1/6, 5, 0]; let p5 = [0, 5, 0];
+
+        let curve1 = new CubicBezier(gl, [p0, p1, p1_, p2]);
+        let curve2 = new CubicBezier(gl, [p2, p3, p4, p5]);
+        let curve = new Path(gl, [curve1, curve2]);
+
+        let crown = Revolution.fromCurve(gl, 20, curve, 0.05, false);
+        crown.setColor(seagreen);
+        crown.rotateX(Math.PI/2);
+
+        let tree = new System(gl);
+        tree.addChild(trunk);
+        tree.addChild(crown);
+        tree.scale(r, h, r);
+
+        return tree;
     }
 }

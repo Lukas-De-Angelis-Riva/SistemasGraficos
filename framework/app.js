@@ -1,6 +1,6 @@
 import { Plane } from './geometry/Plane.js';
 import { Camera } from './Camera.js';
-import { Bridge, Ship, Terrain } from './geometry/Bridge.js';
+import { Bridge, Ship, Terrain, Tree } from './geometry/World.js';
 import { Cube } from './geometry/Cube.js';
 
 var time=0;
@@ -14,8 +14,16 @@ var $canvas=$("#myCanvas");
 var aspect=$canvas.width()/$canvas.height();
 
 var app={
-    h1:3,
-    h2:2,
+    h1:4,
+    h2:14,
+    a:0.4,
+    L_road_line:15,
+    L_road_curve:30,
+    L_terrain:30,
+    L_river:15,
+    H_river: 0.5,
+    generar:crearGeometria,
+    show_normals:'No'
 };
 
 var vertexShaderFile="vertex-shader.glsl";
@@ -137,7 +145,7 @@ function tick() {
 
     camera.move(movement);
  
-    Ship.move(ship);
+    Ship.move(ship, app.L_terrain);
     drawScene();
 }
 
@@ -146,34 +154,59 @@ var terrain;
 var bridge;
 var ship;
 
+var atree;
+
 function crearGeometria(){
-    water = new Plane(gl, 60, 20);
-    water.translate(0, -1+0.25, 0);
+    atree = new Tree(gl, 0.25, 0.5);
+    atree.translate(90, 1, 60);
+
+    let H = 3*(app.H_river-1);
+    water = new Plane(gl, 2*app.L_terrain, app.L_river+2);
+    water.translate(0, H, 0);
     water.setColor([.33, .70, .93]);
-    objetos3D.push(water);
 
-    terrain = new Terrain(gl);
+    terrain = new Terrain(gl, app.L_terrain, app.L_river);
     terrain.translate(0, 0.25, 0);
-    objetos3D.push(terrain);
 
-    bridge = new Bridge(gl);
-    objetos3D.push(bridge);
+    bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, app.L_road_line, app.L_road_curve);
 
     ship = new Ship(gl, 4);
-    ship.translate(0, -0.5+0.25, 30);
-    objetos3D.push(ship);
+    ship.translate(0, H+0.25, app.L_terrain);
 }
 
 function dibujarGeometria(){
-    objetos3D.forEach((o, i) => {
-        o.render(shaderProgram, parent);
-    })
+    let showNormals = app.show_normals != "No";
+    atree.render(shaderProgram, parent, showNormals);
+    water.render(shaderProgram, parent, showNormals);
+    terrain.render(shaderProgram, parent, showNormals);
+    bridge.render(shaderProgram, parent, showNormals);
+    ship.render(shaderProgram, parent, showNormals);
 }
 
 function initMenu(){
     var gui = new dat.GUI();
-    gui.add(app, "h1",2,6).step(0.01);
-    gui.add(app, "h2",10,20).step(0.01);
+
+    var f1 = gui.addFolder('Puente');
+    f1.add(app, 'h1', 2, 6).step(0.05).name("Altura h1");
+    f1.add(app, 'h2', 10, 20).step(0.5).name("Altura h2");
+    f1.add(app, 'a', 0.25, 0.75).step(0.01).name("Separación torres");
+    f1.open();
+
+    var f2 = gui.addFolder('Carretera');
+    f2.add(app, 'L_road_line', 10, 20).step(0.05).name("Largo carretera");
+    f2.add(app, 'L_road_curve', 20, 40).step(0.5).name("Largo subida");
+    f2.open();
+
+    var f3 = gui.addFolder('Terreno');
+    f3.add(app, 'L_terrain', 20, 40).step(0.5).name("Ancho terreno");
+    f3.add(app, 'L_river', 10, 20).step(0.5).name("Ancho rio");
+    f3.add(app, 'H_river', 0.1, 0.9).step(0.01).name("% Altura rio");
+    f3.open();
+
+    gui.add(app, 'generar').name("Volver a generar");
+
+    var f4 = gui.addFolder('Utils');
+    f4.add(app, 'show_normals',["Sí","No"]).name("Mostrar normales: ");
 }
 
 function initShaders() {

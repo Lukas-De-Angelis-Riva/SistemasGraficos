@@ -1,8 +1,6 @@
 import { Object3D } from "./Object3D.js";
 
 var mat4=glMatrix.mat4;
-var mat3=glMatrix.mat3;
-var vec3=glMatrix.vec3;
 
 export class System extends Object3D {
     constructor(gl) {
@@ -23,7 +21,7 @@ export class System extends Object3D {
 
     initBuffers() {}
 
-    render(shaderProgram, parentMatrix=null) {
+    render(shaderProgram, parentMatrix=null, showNormals = false) {
         const gl = this.gl;
         if(!parentMatrix)
             parentMatrix = mat4.identity(mat4.create());
@@ -31,7 +29,7 @@ export class System extends Object3D {
         let m = mat4.create();
         mat4.multiply(m, parentMatrix, this.modelMatrix);
         
-        this.childs.forEach((o, i) => o.render(shaderProgram, m));
+        this.childs.forEach((o, i) => o.render(shaderProgram, m, showNormals));
     }
 
     renderNormal(shaderProgram){}

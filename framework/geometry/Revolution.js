@@ -14,14 +14,21 @@ export class Revolution {
             p.nx *=-1; p.ny *=-1; p.nz *=-1;
             return p;
         });
-        
+
+        let polygon = new Polygon(v);
+        return this.fromPolygon(gl, revolution_div, polygon, closed);
+    }
+
+    static fromPolygon(gl, revolution_div, polygon, closed=false){
+        let path = new Circumference(0);
+
         if(closed){
             // closing the curve
             var bottom; var bottom_center;
             var top; var top_center;
 
-            let first = v[0];
-            let last = v[v.length-1];
+            let first = polygon.vs[0];
+            let last = polygon.vs[polygon.vs.length-1];
             if(first.y < last.y){
                 bottom = new Vertex(first.x, first.y, first.z, 0, -1, 0);
                 bottom_center = new Vertex(0, first.y, 0, 0, -1, 0);
@@ -34,18 +41,12 @@ export class Revolution {
                 top_center = new Vertex(0, first.y, 0, 0, 1, 0);
             }
 
-            v.unshift(bottom);
-            v.unshift(bottom_center);
-            v.push(top);
-            v.push(top_center);
+            polygon.vs.unshift(bottom);
+            polygon.vs.unshift(bottom_center);
+            polygon.vs.push(top);
+            polygon.vs.push(top_center);
         }
 
-        let polygon = new Polygon(v);
-        return this.fromPolygon(gl, revolution_div, polygon);
-    }
-
-    static fromPolygon(gl, revolution_div, polygon){
-        let path = new Circumference(0);
         return new SweepCurve(gl, polygon, path, 1/revolution_div, false);
     }
 }

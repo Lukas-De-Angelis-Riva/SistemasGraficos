@@ -1,6 +1,7 @@
 import { SweepCurve } from "./SweepCurve.js";
 import { System } from "./System.js";
 import { CubicBezier } from "./curves/CubicBezier.js";
+import { Line } from "./curves/Line.js";
 import { QuadraticBezier } from "./curves/QuadraticBezier.js";
 import { MovingSweepCurve } from "./MovingSweepCurve.js"
 
@@ -20,7 +21,7 @@ let green =  [.35, .70, .40];
 
 export class Ship {
     static move(ship){
-        let vel = 0.1;
+        let vel = 0.075;
         ship.translate(0, 0, vel);
 
         let pos = ship.xyz();
@@ -33,12 +34,11 @@ export class Ship {
         let colors = [grey, red, blue, yellow, green];
 
         let hull_lower = new CubicBezier(gl, [[1, 0, 0], [1, -1, 0], [-1, -1, 0], [-1, 0, 0]]);
-        let hull_upper = new CubicBezier(gl, [[-1, 0, 0], [-0.5, 0, 0], [0.5, 0, 0], [1, 0, 0]]);
+        let hull_upper = new Line(gl, [-1, 0, 0], [1, 0, 0]);
 
-        let hull_curve = new Path(gl, [hull_lower, hull_upper]);
-        let hull_profile = new Polygon(hull_curve.discretization(0.1));
+        let hull_profile = new Polygon([...hull_lower.discretization(0.1), ...hull_upper.discretization(1)]);
 
-        let path = new QuadraticBezier(gl, [[0, 0, 0], [0, 0, L/2], [0, 0, L]]);
+        let path = new Line(gl, [0, 0, 0], [0, 0, L]);
         path.setBinor(0, 1, 0);
 
         let hull = new SweepCurve(gl, hull_profile, path, 1);
@@ -76,10 +76,10 @@ export class Ship {
 }
 
 export class Bridge {
-    constructor(gl){
+    constructor(gl, h1=4, h2=14){
         let h0 = 2.5;       // distance from startTower to minRoad
-        let h1 = 4;         // distance from minRoad to maxCurveRoad
-        let h2 = 14;        // Total heigth of the tower
+        // h1               // distance from minRoad to maxCurveRoad
+        // h2               // Total heigth of the tower
         let h3 = h2-h1-h0;  // Distance from maxCurveRoad to EndTower
         let a = 0.4;        // startCable = a*h1
 
@@ -129,11 +129,12 @@ export class Bridge {
     }
 }
 
-class MovingCurve extends QuadraticBSpline {
+class TerrainCurve extends QuadraticBSpline {
     constructor(gl, controlPoints){
         super(gl, controlPoints);
         this.backup = controlPoints.slice();
         this.i = 0;
+        this.lap = true;
     }
 
     move(p, a, b, c){
@@ -141,7 +142,7 @@ class MovingCurve extends QuadraticBSpline {
     }
 
     evaluate(u){
-        if(u < 1e-6){ // is 0
+        if(this.lap && u < 1e-6){ // is 0
             this.i++;
             this.controlPoints = this.backup.slice();
             let a = 2*Math.sin(0.1*this.i+1234);
@@ -152,6 +153,10 @@ class MovingCurve extends QuadraticBSpline {
             this.controlPoints[5] = this.move(this.controlPoints[5], a, 0, 0);
             this.controlPoints[6] = this.move(this.controlPoints[6], a, b, 0);
             this.controlPoints[7] = this.move(this.controlPoints[7], a, 0, 0);
+
+            this.lap = false;
+        } else if (u > 1e-6){
+            this.lap = true;
         }
 
         return super.evaluate(u);
@@ -161,6 +166,7 @@ class MovingCurve extends QuadraticBSpline {
 export class Terrain {
     constructor(gl, L=30, L_inner=15, H=3){
         let p0 = [-L, 0, 0];
+        let p0_ = [-L+1e-6, 0, 0];
         let p1 = [-L_inner, 0, 0];
         let p2 = [-L_inner/2, 0, 0];
         let p3 = [-L_inner/4, -H, 0];
@@ -168,12 +174,13 @@ export class Terrain {
         let p5 = [L_inner/4, -H, 0];
         let p6 = [L_inner/2, 0, 0];
         let p7 = [L_inner, 0, 0];
+        let p8_ = [L-1e-6, 0, 0];
         let p8 = [L, 0, 0];
 
-        let controlPoints = [p0, p0, p1, p2, p3, p4, p5, p6, p7, p8, p8];
-        let terrain_curve = new MovingCurve(gl, controlPoints);
+        let controlPoints = [p0, p0_, p1, p2, p3, p4, p5, p6, p7, p8_, p8];
+        let terrain_curve = new TerrainCurve(gl, controlPoints);
 
-        let line = new QuadraticBezier(gl, [[0, 0, -L], [0, 0, 0], [0, 0, L]]);
+        let line = new Line(gl, [0, 0, -L], [0, 0, L]);
         line.setBinor(0, 1, 0);
 
         let t = new MovingSweepCurve(gl, terrain_curve, 0.05, line, 0.01, false);
@@ -184,24 +191,60 @@ export class Terrain {
 
 class Road {
     constructor(gl, h1 = 2, L=10) {
-        let profile1 = new CubicBezier(gl, [[-3, 1, 0], [-2.5, 1, 0], [-2.5, 1, 0], [-2, 1, 0]]);
-        let profile2 = new CubicBezier(gl, [[-2, 1, 0], [-1.5, 1, 0], [-1.3, 0.5, 0], [-1, 0.5, 0]]);
-        let profile3 = new CubicBezier(gl, [[-1, 0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [1, 0.5, 0]]);
-        let profile4 = new CubicBezier(gl, [[1, 0.5, 0], [1.3, 0.5, 0], [1.5, 1, 0], [2, 1, 0]]);
-        let profile5 = new CubicBezier(gl, [[2, 1, 0], [2.5, 1, 0], [2.5, 1, 0], [3, 1, 0]]);
-        let profile6 = new CubicBezier(gl, [[3, 1, 0], [3, 0.5, 0], [3, 0.5, 0], [3, 0, 0]]);
-        let profile7 = new CubicBezier(gl, [[3, 0, 0], [0, 0, 0], [0, 0, 0], [-3, 0, 0]]);
-        let profile8 = new CubicBezier(gl, [[-3, 0, 0], [-3, 0.5, 0], [-3, 0.5, 0], [-3, 1, 0]]);
+        let m1x = function(p){
+            return [-p[0], p[1], p[2]];
+        }
 
-        let profile_path = new Path(gl, [profile1, profile2, profile3, profile4, profile5, profile6, profile7, profile8]);
-        this.profile = new Polygon(profile_path.discretization(0.05));
+        let h = 0.25;
+        let A = 6;
+        let J = A/2 - h;
+        let thickness = 0.5;
+        let sidewalk_thickness = 0.25;
+
+        // left
+        let pLeftUp = [-A/2, sidewalk_thickness+thickness, 0];
+        let pLeftDo = [-A/2, 0, 0];
+
+        // right
+        let pRightUp = [A/2, sidewalk_thickness+thickness, 0];
+        let pRightDo = [A/2, 0, 0];
+
+        // top
+        let pLeft0 = [-(A-h)/2, sidewalk_thickness+thickness, 0];
+        let pLeft1 = [-J+h/2, sidewalk_thickness+thickness, 0];
+        let pLeft2 = [-J+h/2, thickness, 0];
+        let pLeft3 = [-J+h, thickness, 0];
+        let pRight0 = m1x(pLeft3);
+        let pRight1 = m1x(pLeft2);
+        let pRight2 = m1x(pLeft1);
+        let pRight3 = m1x(pLeft0);
+
+        let profile_array = [];
+        let profile1 = new Line(gl, pLeftUp, pLeft0);
+        let profile2 = new CubicBezier(gl, [pLeft0, pLeft1, pLeft2, pLeft3]);
+        let profile3 = new Line(gl, pLeft3, pRight0);
+        let profile4 = new CubicBezier(gl, [pRight0, pRight1, pRight2, pRight3]);
+        let profile5 = new Line(gl, pRight3, pRightUp);
+        let profile6 = new Line(gl, pRightUp, pRightDo);
+        let profile7 = new Line(gl, pRightDo, pLeftDo);
+        let profile8 = new Line(gl, pLeftDo, pLeftUp);
+
+        profile_array = profile_array.concat(profile1.discretization(1));
+        profile_array = profile_array.concat(profile2.discretization(0.05));
+        profile_array = profile_array.concat(profile3.discretization(1));
+        profile_array = profile_array.concat(profile4.discretization(0.05));
+        profile_array = profile_array.concat(profile5.discretization(1));
+        profile_array = profile_array.concat(profile6.discretization(1));
+        profile_array = profile_array.concat(profile7.discretization(1));
+        profile_array = profile_array.concat(profile8.discretization(1));
+        this.profile = new Polygon(profile_array);
 
         let path1 = new CubicBezier(gl, [[-2*L, 0, 0], [-2*L+1, 0, 0], [-L-1, 0, 0], [-L, 0, 0]]);
         let path2 = new CubicBezier(gl, [[-L, 0, 0], [-L/2, 0, h1], [L/2, 0, h1], [L, 0, 0]]);
         let path3 = new CubicBezier(gl, [[L, 0, 0], [L+1, 0, 0], [2*L-1, 0, 0], [2*L, 0, 0]]);
         this.path = new Path(gl, [path1, path2, path3]);
 
-        return new SweepCurve(gl, this.profile, this.path, 0.05);
+        return new SweepCurve(gl, this.profile, this.path, 0.05, false);
     }
 
     // h from 0 to 1 (high = h * h1s)
@@ -222,35 +265,36 @@ class Tower {
         let line_h = 0.30;
         let curve_h = 0.05; // (1 - 3·line_h)/2
 
-        let line1 = new CubicBezier(gl, [[r, 0, 0],
-                                        [r, 1/3*h2*line_h, 0],
-                                        [r, 2/3*h2*line_h, 0],
-                                        [r, h2*line_h, 0]]);
+        let line1 = new Line(gl, [r, 0, 0], [r, h2*line_h, 0]);
+        line1.setBinor(0, 0, -1);
 
         let curve1 = new CubicBezier(gl, [[r, h2*line_h, 0],
                                         [r, h2*(line_h+curve_h*1/2), 0],
                                         [r/2, h2*(line_h+curve_h*1/2), 0],
                                         [r/2, h2*(line_h+curve_h), 0]]);
+        curve1.setBinor(0, 0, -1);
 
-        let line2 = new CubicBezier(gl, [[r/2, h2*(line_h+curve_h), 0],
-                                        [r/2, h2*(line_h*4/3+curve_h), 0],
-                                        [r/2, h2*(line_h*5/3+curve_h), 0],
-                                        [r/2, h2*(2*line_h+curve_h), 0]]);
+        let line2 = new Line(gl, [r/2, h2*(line_h+curve_h), 0], [r/2, h2*(2*line_h+curve_h), 0]);
+        line2.setBinor(0, 0, -1);
 
         let curve2 = new CubicBezier(gl, [[r/2, h2*(2*line_h+curve_h), 0],
                                         [r/2, h2*(2*line_h+curve_h*3/2), 0],
                                         [r/4, h2*(2*line_h+curve_h*3/2), 0],
                                         [r/4, h2*(2*line_h+2*curve_h), 0]]);
+        curve2.setBinor(0, 0, -1);
 
-        let line3 = new CubicBezier(gl, [[r/4, h2*(2*line_h+2*curve_h), 0],
-                                        [r/4, h2*(line_h*7/3+2*curve_h), 0],
-                                        [r/4, h2*(line_h*8/3+2*curve_h), 0],
-                                        [r/4, h2*(3*line_h+2*curve_h), 0]]);
+        let line3 = new Line(gl, [r/4, h2*(2*line_h+2*curve_h), 0], [r/4, h2*(3*line_h+2*curve_h), 0]);
+        line3.setBinor(0, 0, -1);
 
+        let profile_array = [];
+        profile_array = profile_array.concat(line1.discretization(1));
+        profile_array = profile_array.concat(curve1.discretization(0.05));
+        profile_array = profile_array.concat(line2.discretization(1));
+        profile_array = profile_array.concat(curve2.discretization(0.05));
+        profile_array = profile_array.concat(line3.discretization(1));
+        let profile = new Polygon(profile_array);
 
-        let path = new Path(gl, [line1, curve1, line2, curve2, line3]);
-
-        let t = Revolution.fromCurve(gl, 10, path, 0.05);
+        let t = Revolution.fromPolygon(gl, 10, profile, true);
         t.setColor(red);
         return t;
     }

@@ -88,7 +88,7 @@ export class MovingSweepCurve extends Object3D {
             return [level.tx, level.ty, level.tz];
         }
 
-        let p = this.curve.evaluate(u);
+        let p = this.curve.evaluate(u*this.curve.length());
         let normal = vec4.fromValues(p.nx, p.ny, p.nz, 1);
 
         let level = this.path.evaluate(v*this.path.length());

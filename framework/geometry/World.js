@@ -1,4 +1,5 @@
 import { SweepCurve } from "./SweepCurve.js";
+import { Sphere } from "./Sphere.js";
 import { System } from "./System.js";
 import { CubicBezier } from "./curves/CubicBezier.js";
 import { Line } from "./curves/Line.js";
@@ -331,17 +332,126 @@ class Cable {
     }
 }
 
-export class Tree {
+// Give random intenger in [min, max);
+function generateRandom(min, max) {
+    let difference = max - min;
+    let rand = Math.random();
+    rand = Math.floor( rand * difference);
+    rand = rand + min;
+    return rand;
+}
+function randomSign(){
+    return 2*Math.floor(Math.random()*2)-1;
+}
+
+function generateRandomXZ(N, L, W_road, W_river){
+    let randoms = []
+    // N << (L-W_river) * (L-W_road);
+    while(randoms.length < N){
+        let x = generateRandom(W_river, L)*randomSign();
+        let z = generateRandom(W_road, L)*randomSign();
+        let contained = randoms.map(u => u[0]==x && u[1]==z).reduce((acc, cur) => acc || cur, false);
+        if(!contained){
+            randoms.push([x,z]);
+        }
+    }
+    return randoms;
+}
+
+export class TreeGenerator {
+    static randomTree(gl, x, y, z){
+        let r = 0.25 + 0.1*(Math.random()-1);
+        let h = 0.50 + 0.25*(Math.random()-1);
+
+        let dice = generateRandom(0, 3);
+        var tree;
+        if(dice == 0){
+            tree = new LargeTree(gl, r, h);
+        } else if (dice == 1){
+            tree = new SphereTree(gl, r, h);
+        } else {
+            tree = new PineTree(gl, r, h);
+        }
+
+        tree.translate(x,y,z);
+        let rand_rad = 2*Math.PI*Math.random();
+        tree.rotateY(rand_rad);
+        return tree;
+}
+    static generate(gl, N, L, W_road, W_river){
+        let trees = [];
+        let coordinates = generateRandomXZ(N, L, W_road, W_river);
+        for(let i = 0; i < N; i++){
+            let tree = this.randomTree(gl, coordinates[i][0], 0.25, coordinates[i][1]);
+            trees.push(tree);
+        }
+        return trees;
+    }
+}
+
+class SphereTree {
     constructor(gl, r, h){
-        let circ = new Circle(1, 20 /*div*/);
-        let trunk_path = new Line(gl, [0,-0.5,0], [0, 0.5, 0]);
+        let circ = new Circle(h/4, 20 /*div*/);
+        let trunk_path = new CubicBezier(gl, [[0,0,0], [0, 3*h/2, 0], [h/2, 3*h, 0], [h/2, 9*h/2, 0]]);
+        trunk_path.setBinor(0, 0, 1);
+        let trunk = new SweepCurve(gl, circ, trunk_path, 0.1, true);
+        trunk.setColor(brown);
+
+        let crown = new Sphere(gl, 2*r, 25, 25);
+        crown.translate(h/2, 9*h/2, 0);
+        crown.setColor(seagreen);
+        let tree = new System(gl);
+        tree.addChild(trunk);
+        tree.addChild(crown);
+        return tree;
+    }
+}
+
+class PineTree {
+    constructor(gl, r, H){
+        H *= 6;
+        let h = H*0.45;
+        let circ = new Circle(r, 20 /*div*/);
+        let trunk_path = new Line(gl, [0, 0, 0], [0, H-2*h, 0]);
+        trunk_path.setBinor(0, 0, 1);
+        let trunk = new SweepCurve(gl, circ, trunk_path, 1, true);
+
+        let mPh = function(p){
+            return [p[0], p[1]-h/2, p[2]];
+        }
+        let p0 = [0, H, 0]; let p1 = [0, H-h, 0]; let p2 = [4*r, H-h, 0]; let p3 = [0, H-h, 0];
+        let p4 = mPh(p0); let p5 = mPh(p1); let p6 = mPh(p2); let p7 = mPh(p3);
+        let p8 = mPh(p4); let p9 = mPh(p5); let p10 = mPh(p6); let p11 = mPh(p7);
+
+        let curve1 = new CubicBezier(gl, [p0, p1, p2, p3]);
+        let curve2 = new CubicBezier(gl, [p4, p5, p6, p7]);
+        let curve3 = new CubicBezier(gl, [p8, p9, p10, p11]);
+
+        let crown_curve = new Path(gl, [curve1, curve2, curve3]);
+        crown_curve.setBinor(0, 0, -1);
+        let crown = Revolution.fromCurve(gl, 20, crown_curve, 0.05, false);
+        crown.setColor(seagreen);
+        crown.rotateX(Math.PI/2);
+
+        let tree = new System(gl);
+        tree.addChild(trunk);
+        tree.addChild(crown);
+
+        return tree;
+    }
+}
+
+class LargeTree {
+    constructor(gl, r, h){
+        let circ = new Circle(r, 20 /*div*/);
+        let trunk_path = new Line(gl, [0, 0,0], [0, h, 0]);
         trunk_path.setBinor(0, 0, 1);
         let trunk = new SweepCurve(gl, circ, trunk_path, 1, true);
         trunk.setColor(brown);
 
-        let p0 = [1, 0.5, 0]; let p1 = [3/2, 1, 0]; let p1_ = [3/2+1e-6, 1, 0];
-        let p2 = [1, 2, 0];
-        let p3 = [1/6, 4, 0]; let p4 = [1/6, 5, 0]; let p5 = [0, 5, 0];
+        let p0 = [r, h, 0]; let p1 = [3*r/2, 1.2*h, 0]; let p1_ = [3*r/2+1e-6, 1.2*h, 0];
+        let p2 = [r, 2*h, 0];
+        let p3 = [r/6, 4*h, 0]; let p4 = [r/6, 5*h, 0]; let p5 = [0, 5*h, 0];
 
         let curve1 = new CubicBezier(gl, [p0, p1, p1_, p2]);
         let curve2 = new CubicBezier(gl, [p2, p3, p4, p5]);
@@ -354,7 +464,6 @@ export class Tree {
         let tree = new System(gl);
         tree.addChild(trunk);
         tree.addChild(crown);
-        tree.scale(r, h, r);
 
         return tree;
     }

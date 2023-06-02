@@ -1,6 +1,6 @@
 import { Plane } from './geometry/Plane.js';
 import { Camera } from './Camera.js';
-import { Bridge, Ship, Terrain, Tree } from './geometry/World.js';
+import { Bridge, Ship, Terrain, TreeGenerator } from './geometry/World.js';
 import { Cube } from './geometry/Cube.js';
 
 var time=0;
@@ -16,12 +16,13 @@ var aspect=$canvas.width()/$canvas.height();
 var app={
     h1:4,
     h2:14,
-    a:0.4,
+    a:0.6,
     L_road_line:15,
     L_road_curve:30,
     L_terrain:30,
     L_river:15,
     H_river: 0.5,
+    N_trees: 75,
     generar:crearGeometria,
     show_normals:'No'
 };
@@ -154,11 +155,11 @@ var terrain;
 var bridge;
 var ship;
 
-var atree;
+var trees;
 
 function crearGeometria(){
-    atree = new Tree(gl, 0.25, 0.5);
-    atree.translate(90, 1, 60);
+    //    static generate(gl, N, L, W_road, W_river){
+    trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain, 4, app.L_river);
 
     let H = 3*(app.H_river-1);
     water = new Plane(gl, 2*app.L_terrain, app.L_river+2);
@@ -176,7 +177,9 @@ function crearGeometria(){
 
 function dibujarGeometria(){
     let showNormals = app.show_normals != "No";
-    atree.render(shaderProgram, parent, showNormals);
+    trees.forEach(t => {
+        t.render(shaderProgram, parent, showNormals);
+    });
     water.render(shaderProgram, parent, showNormals);
     terrain.render(shaderProgram, parent, showNormals);
     bridge.render(shaderProgram, parent, showNormals);
@@ -201,6 +204,7 @@ function initMenu(){
     f3.add(app, 'L_terrain', 20, 40).step(0.5).name("Ancho terreno");
     f3.add(app, 'L_river', 10, 20).step(0.5).name("Ancho rio");
     f3.add(app, 'H_river', 0.1, 0.9).step(0.01).name("% Altura rio");
+    f3.add(app, 'N_trees', 0, 150).step(1).name("# Árboles");
     f3.open();
 
     gui.add(app, 'generar').name("Volver a generar");

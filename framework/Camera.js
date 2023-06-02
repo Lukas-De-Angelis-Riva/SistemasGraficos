@@ -163,7 +163,12 @@ export class OrbitalCamera {
     }
 
     tunrUp(rad){
-        this.b += rad;
+        this.b -= rad;
+        if(this.b >= Math.PI-Math.PI/12){
+            this.b = Math.PI-Math.PI/12;
+        }else if (this.b <= Math.PI/12){
+            this.b = Math.PI/12;
+        }
     }
 
     move(movement){

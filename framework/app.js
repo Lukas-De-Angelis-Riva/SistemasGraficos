@@ -14,16 +14,15 @@ var $canvas=$("#myCanvas");
 var aspect=$canvas.width()/$canvas.height();
 
 var app={
-    h1:4,
-    h2:14,
-    s1:1,
-    a:0.6,
-    L_road_line:15,
-    L_road_curve:30,
-    L_terrain:30,
-    L_river:15,
+    h1: 2,
+    h2: 12,
+    s1: 0.70,
+    a: 0.7,
+    L_road_curve: 25,
+    L_terrain: 50,
+    L_river: 15,
     H_river: 0.5,
-    N_trees: 75,
+    N_trees: 100,
     generar:crearGeometria,
     show_normals:'No'
 };
@@ -82,7 +81,7 @@ function getShader(gl,code,type) {
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         console.error(gl.getShaderInfoLog(shader));
         return null;
-    }    
+    }
     return shader;
 }
 
@@ -118,7 +117,7 @@ function drawScene() {
 
     // Se configura la matriz de proyección
     mat4.identity(matrizProyeccion);
-    mat4.perspective(matrizProyeccion, mouse.zoom, aspect, 0.1, 100.0);
+    mat4.perspective(matrizProyeccion, 30, aspect, 0.1, 100.0);
     mat4.scale(matrizProyeccion,matrizProyeccion,[1,-1,1]); // parche para hacer un flip de Y, parece haber un bug en glmatrix
 
     // Definimos la ubicación de la camara
@@ -138,17 +137,17 @@ function tick() {
     if(mouse.prev_x != mouse.x){
         let deltaX =-(mouse.new_x - mouse.prev_x);
         mouse.prev_x = mouse.new_x;
-        camera.turnSide(deltaX * 2 * Math.PI * 1/5000);
+        camera.turnSide(deltaX/10);
     }
     if(mouse.prev_y != mouse.y){
         let deltaY = -(mouse.new_y - mouse.prev_y);
         mouse.prev_y = mouse.new_y;
-        camera.tunrUp(deltaY * 2 * Math.PI * 1/5000);
+        camera.tunrUp(deltaY/20);
     }
 
     camera.move(movement);
  
-    Ship.move(ship, app.L_terrain-3.5);
+    Ship.move(ship, app.L_terrain/2-3.5);
     drawScene();
 }
 
@@ -159,21 +158,20 @@ var ship;
 var trees;
 
 function crearGeometria(){
-    //    static generate(gl, N, L, W_road, W_river){
-    trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain, 4, app.L_river);
+    trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4);
 
     let H = 3*(app.H_river-1);
-    water = new Plane(gl, 2*app.L_terrain, app.L_river+2);
+    water = new Plane(gl, app.L_terrain, app.L_river+2);
     water.translate(0, H, 0);
     water.setColor([.33, .70, .93]);
 
-    terrain = new Terrain(gl, app.L_terrain, app.L_river);
+    terrain = new Terrain(gl, app.L_terrain/2, app.L_river);
     terrain.translate(0, 0.25, 0);
 
-    bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, app.L_road_line, app.L_road_curve, app.s1);
+    bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, (app.L_terrain/2-app.L_road_curve/2), app.L_road_curve, app.s1);
 
     ship = new Ship(gl, 4);
-    ship.translate(0, H+0.25, app.L_terrain-3.5);
+    ship.translate(0, H+0.25, app.L_terrain/2-3.5);
 
     followerCamera = new FollowerCamera(gl, [0, 2, -5], ship);
 }
@@ -193,20 +191,19 @@ function initMenu(){
     var gui = new dat.GUI();
 
     var f1 = gui.addFolder('Puente');
-    f1.add(app, 'h1', 2, 6).step(0.05).name("Altura h1");
-    f1.add(app, 'h2', 10, 20).step(0.5).name("Altura h2");
-    f1.add(app, 's1', 0.25, 4).step(0.01).name("S1 tirantes");
-    f1.add(app, 'a', 0.25, 0.75).step(0.01).name("Separación torres");
+    f1.add(app, 'h1', 1.5, 4).step(0.05).name("Altura h1");
+    f1.add(app, 'h2', 8, 16).step(0.5).name("Altura h2");
+    f1.add(app, 's1', 0.25, 2).step(0.01).name("S1 tirantes");
+    f1.add(app, 'a', 0.30, 0.80).step(0.01).name("Separación torres");
     f1.open();
 
     var f2 = gui.addFolder('Carretera');
-    f2.add(app, 'L_road_line', 10, 20).step(0.05).name("Largo carretera");
     f2.add(app, 'L_road_curve', 20, 40).step(0.5).name("Largo subida");
     f2.open();
 
     var f3 = gui.addFolder('Terreno');
-    f3.add(app, 'L_terrain', 20, 40).step(0.5).name("Ancho terreno");
-    f3.add(app, 'L_river', 10, 20).step(0.5).name("Ancho rio");
+    f3.add(app, 'L_terrain', 40, 80).step(0.25).name("Ancho terreno");
+    f3.add(app, 'L_river', 10, 20).step(0.25).name("Ancho rio");
     f3.add(app, 'H_river', 0.1, 0.9).step(0.01).name("% Altura rio");
     f3.add(app, 'N_trees', 0, 150).step(1).name("# Árboles");
     f3.open();
@@ -252,9 +249,9 @@ function webGLStart() {
     initShaders();
 
     dronCamera = new DronCamera(gl, 16, 13, 24);
-    orbitalCamera = new OrbitalCamera(gl, 20, 0, Math.PI/4);
+    orbitalCamera = new OrbitalCamera(gl, 30, Math.PI/4, 3*Math.PI/8);
     
-    camera = dronCamera;
+    camera = orbitalCamera;
 
     crearGeometria();
 
@@ -273,7 +270,6 @@ mouse.prev_x = 0;
 mouse.prev_y = 0;
 mouse.new_x = 0;
 mouse.new_y = 0;
-mouse.zoom = 30;
 
 var movement = new Object();
 movement.left = false;
@@ -288,17 +284,20 @@ movement.turndown = false;
 movement.turnleft = false;
 movement.turnright = false;
 
+movement.zoomOut = false;
+movement.zoomIn = false;
+
 document.addEventListener('keydown', function(event) {
     if(event.key == '1') camera = orbitalCamera;
     if(event.key == '2') camera = dronCamera;
     if(event.key == '3') camera = followerCamera;
 
-    if(event.key == 'a') movement.left = true;
-    if(event.key == 's') movement.back = true;
-    if(event.key == 'd') movement.right = true;
-    if(event.key == 'w') movement.front = true;
+    if(event.key == 'a' || event.key == 'A') movement.left = true;
+    if(event.key == 's' || event.key == 'S') movement.back = true;
+    if(event.key == 'd' || event.key == 'D') movement.right = true;
+    if(event.key == 'w' || event.key == 'w') movement.front = true;
     if(event.key == ' ') movement.up = true;
-    if(event.key == 'z') movement.down = true;
+    if(event.key == 'z' || event.key == 'z') movement.down = true;
 
     if(event.key == 'ArrowRight') movement.turnright = true;
     if(event.key == 'ArrowLeft') movement.turnleft = true;
@@ -307,19 +306,17 @@ document.addEventListener('keydown', function(event) {
 });
 
 document.addEventListener('keyup', function(event) {
-    if(event.key == 'a') movement.left = false;
-    if(event.key == 's') movement.back = false;
-    if(event.key == 'd') movement.right = false;
-    if(event.key == 'w') movement.front = false;
+    if(event.key == 'a' || event.key == 'A') movement.left = false;
+    if(event.key == 's' || event.key == 'S') movement.back = false;
+    if(event.key == 'd' || event.key == 'D') movement.right = false;
+    if(event.key == 'w' || event.key == 'w') movement.front = false;
     if(event.key == ' ') movement.up = false;
-    if(event.key == 'z') movement.down = false;
+    if(event.key == 'z' || event.key == 'z') movement.down = false;
 
     if(event.key == 'ArrowRight') movement.turnright = false;
     if(event.key == 'ArrowLeft') movement.turnleft = false;
     if(event.key == 'ArrowUp') movement.turnup = false;
     if(event.key == 'ArrowDown') movement.turndown = false;
-
-    if(event.key == 'x') console.log(camera);
 });
 
 document.addEventListener('mousedown', function(event) {
@@ -343,12 +340,10 @@ document.addEventListener('mousemove', function(event) {
 });
 
 document.addEventListener('wheel', function(event) {
-    mouse.zoom -= event.deltaY/1200;
-    if(mouse.zoom > 31){
-        mouse.zoom = 31;
-    }else if(mouse.zoom < 30){
-        mouse.zoom = 30;
-    }
+    let mov = Object();
+    mov.zoomOut = event.deltaY>0;
+    mov.zoomIn = event.deltaY<0;
+    camera.move(mov);
 })
 
 // cuando el documento HTML esta completo, iniciamos la aplicación

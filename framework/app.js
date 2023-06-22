@@ -5,6 +5,7 @@ import { Cube } from './geometry/Cube.js';
 import { SweepCurve } from './geometry/SweepCurve.js';
 import { Square } from './geometry/polygons/Square.js';
 import { QuadraticBezier } from './geometry/curves/QuadraticBezier.js';
+import { Cuboid } from './geometry/standard/Cuboid.js';
 
 var time=0;
 
@@ -57,11 +58,16 @@ function loadTextures(){
 
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
 
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
         // filtros de mini y magnificación
         // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-
-        gl.generateMipmap(gl.TEXTURE_2D);
+        
+//        gl.generateMipmap(gl.TEXTURE_2D);
         gl.bindTexture(gl.TEXTURE_2D, null);
 
         // Comienza el programa.
@@ -151,7 +157,7 @@ function drawScene() {
 
     // Se configura la matriz de proyección
     mat4.identity(matrizProyeccion);
-    mat4.perspective(matrizProyeccion, 30, aspect, 0.1, 100.0);
+    mat4.perspective(matrizProyeccion, 30, aspect, 0.1, 450.0);
     mat4.scale(matrizProyeccion,matrizProyeccion,[1,-1,1]); // parche para hacer un flip de Y, parece haber un bug en glmatrix
 
     // Definimos la ubicación de la camara
@@ -181,7 +187,7 @@ function tick() {
 
     camera.move(movement);
  
-    Ship.move(ship, app.L_terrain/2-3.5);
+    //Ship.move(ship, app.L_terrain/2-3.5);
     drawScene();
 }
 
@@ -191,7 +197,9 @@ var bridge;
 var ship;
 var trees;
 
+var cuboid;
 function crearGeometria(){
+    cuboid = new Cuboid(gl, 400, 400, 400);
     trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4);
 
     let H = 3*(app.H_river-1);
@@ -212,6 +220,7 @@ function crearGeometria(){
 
 function dibujarGeometria(){
     let showNormals = app.show_normals != "No";
+    cuboid.render(shaderProgram, parent, showNormals);
     trees.forEach(t => {
         t.render(shaderProgram, parent, showNormals);
     });

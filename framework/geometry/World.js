@@ -11,8 +11,8 @@ import { Polygon } from "./polygons/Polygon.js";
 import { Revolution } from "./Revolution.js";
 import { Circumference } from "./curves/Circumference.js";
 
-import { Cube } from "./Cube.js";
 import { QuadraticBSpline } from "./curves/QuadraticBSpline.js";
+import { Cuboid } from "./standard/Cuboid.js";
 
 let grey =   [.80, .80, .80];
 let red =    [.75, 0.0, 0.0];
@@ -52,25 +52,22 @@ export class Ship {
         for(let j = 0; j < 3; j++){
             for(let i = 0; i < 5; i++){
                 if(i > 2 && j > 1) continue;
-                let cube = new Cube(gl, size);
-                cube.translate((i-2)*size, size/2+1e-4 + j*size, L/4);
-                cube.scale(1-diff, 1-diff, 2);
+                let container = new Cuboid(gl, size-diff, size-diff, 2*size);
+                container.translate((i-2)*size, size/2+1e-4 + j*size, L/4);
                 const random = Math.floor(Math.random() * colors.length);
-                cube.setColor(colors[random]);
-                hull.addChild(cube);
+                container.setColor(colors[random]);
+                hull.addChild(container);
             }
         }
 
-        let cube1 = new Cube(gl, size);
+        let cube1 = new Cuboid(gl, 5*size, 3*size, size);
         cube1.translate(0, 3*size/2+1e-4, L/10);
-        cube1.scale(5, 3, 1);
         cube1.setColor(red);
 
         hull.addChild(cube1);
 
-        let cube2 = new Cube(gl, size);
+        let cube2 = new Cuboid(gl, 6*size, size, 2*size);
         cube2.translate(0, 7*size/2+2e-4, L/10);
-        cube2.scale(6, 1, 2);
         cube2.setColor(red);
 
         hull.addChild(cube2);

@@ -8,7 +8,7 @@ var vec4=glMatrix.vec4;
 var vec3=glMatrix.vec3;
 
 export class Revolution {
-    static fromCurve(gl, revolution_div, curve, step, closed=true){
+    static fromCurve(gl, revolution_div, curve, step, closed=true, u_scale = 1, v_scale = 1){
         let v = curve.discretization(step);
         v.map(p => {
             p.nx *=-1; p.ny *=-1; p.nz *=-1;
@@ -16,10 +16,10 @@ export class Revolution {
         });
 
         let polygon = new Polygon(v);
-        return this.fromPolygon(gl, revolution_div, polygon, closed);
+        return this.fromPolygon(gl, revolution_div, polygon, closed, u_scale, v_scale);
     }
 
-    static fromPolygon(gl, revolution_div, polygon, closed=false){
+    static fromPolygon(gl, revolution_div, polygon, closed=false, u_scale = 1, v_scale = 1){
         let path = new Circumference(0);
 
         if(closed){
@@ -47,6 +47,6 @@ export class Revolution {
             polygon.vs.push(top_center);
         }
 
-        return new SweepCurve(gl, polygon, path, 1/revolution_div, false);
+        return new SweepCurve(gl, polygon, path, 1/revolution_div, false, u_scale, v_scale);
     }
 }

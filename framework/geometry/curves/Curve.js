@@ -11,6 +11,16 @@ export class Curve {
         return undefined;
     }
 
+    // "integrates" the curve with delta = step
+    calculate_length(step){
+        return undefined;
+    }
+
+    // partial "integrations" of the curve with delta = step
+    cumulative_distance(step){
+        return undefined
+    }
+
     // Length of the curve
     length(){
         return undefined;

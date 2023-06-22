@@ -120,7 +120,7 @@ export class Bridge {
             let do_y = Road.getY(gl, x0, L_road_curve, h1);
 
             let line = new Line(gl, [x0, do_y-(a*h1+0.5), 0], [x0, up_y, 0]);
-            let vsuspender = new SweepCurve(gl, circ, line, 1, false);
+            let vsuspender = new SweepCurve(gl, circ, line, 1, false, 1, do_y-(a*h1+0.5)-up_y);
 
             vsuspender.setColor(red);
             cable1.addChild(vsuspender);
@@ -271,7 +271,7 @@ class Road {
 
         this.path = new Path(gl, [path1, path2, path3]);
         this.path.setBinor(0,1,0);
-        return new SweepCurve(gl, this.profile, this.path, 0.1, false);
+        return new SweepCurve(gl, this.profile, this.path, 0.1, true, 1, 10);
     }
 
     // h from 0 to 1 (high = h * h1s)
@@ -338,7 +338,7 @@ class Tower {
         profile_array = profile_array.concat(line3.discretization(1));
         let profile = new Polygon(profile_array);
 
-        let t = Revolution.fromPolygon(gl, 10, profile, true);
+        let t = Revolution.fromPolygon(gl, 10, profile, true, 5, 1);
         t.setColor(red);
         return t;
     }
@@ -355,7 +355,7 @@ class Cable {
         let circ = new Circumference(r);
         let circ_profile = new Polygon(circ.discretization(0.25));
 
-        let c = new SweepCurve(gl, circ_profile, curve, 0.01);
+        let c = new SweepCurve(gl, circ_profile, curve, 0.01, true, 1, 20);
         c.setColor(red);
         return c;
     }
@@ -457,10 +457,10 @@ class SphereTree {
         let circ = new Circle(h/4, 20 /*div*/);
         let trunk_path = new CubicBezier(gl, [[0,0,0], [0, 3*h/2, 0], [h/2, 3*h, 0], [h/2, 9*h/2, 0]]);
         trunk_path.setBinor(0, 0, 1);
-        let trunk = new SweepCurve(gl, circ, trunk_path, 0.1, true);
+        let trunk = new SweepCurve(gl, circ, trunk_path, 0.20, true);
         trunk.setColor(brown);
 
-        let crown = new Sphere(gl, 2*r, 25, 25);
+        let crown = new Sphere(gl, 2*r, 10, 10);
         crown.translate(h/2, 9*h/2, 0);
         crown.setColor(seagreen);
         let tree = new System(gl);
@@ -492,7 +492,7 @@ class PineTree {
 
         let crown_curve = new Path(gl, [curve1, curve2, curve3]);
         crown_curve.setBinor(0, 0, -1);
-        let crown = Revolution.fromCurve(gl, 20, crown_curve, 0.05, false);
+        let crown = Revolution.fromCurve(gl, 20, crown_curve, 0.20, false);
         crown.setColor(seagreen);
         crown.rotateX(Math.PI/2);
 
@@ -520,7 +520,7 @@ class LargeTree {
         let curve2 = new CubicBezier(gl, [p2, p3, p4, p5]);
         let curve = new Path(gl, [curve1, curve2]);
 
-        let crown = Revolution.fromCurve(gl, 20, curve, 0.05, false);
+        let crown = Revolution.fromCurve(gl, 20, curve, 0.20, false);
         crown.setColor(seagreen);
         crown.rotateX(Math.PI/2);
 

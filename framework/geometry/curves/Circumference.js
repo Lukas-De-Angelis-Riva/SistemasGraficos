@@ -1,6 +1,10 @@
 var cos=Math.cos;
 var sin=Math.sin;
 
+function approx_equals(a, b, delta=1e-6) {
+    return (b - delta <= a) && (a <= b + delta);
+}
+
 export class Circumference {
     constructor(r) {
         this.r = r;
@@ -25,6 +29,29 @@ export class Circumference {
             points.push(this.evaluate(u));
         }
         return points;
+    }
+
+    cumulative_distance(step){
+        // In case of revolution
+        if(approx_equals(this.r, 0)){
+            // return [0, 1, 2, ..., 1/step];
+            return [...Array(1/step+1).keys()];
+        }
+
+        let cumulative = [];
+        for(let u=0; u<=this.length()+step/2; u+=step){
+            cumulative.push(u * 2 * Math.PI * this.r);
+        }
+        return cumulative;
+    }
+
+    calculate_length(step){
+        // In case of revolution
+        if(approx_equals(this.r, 0)){
+            return 1/step;
+        }
+
+        return 2 * Math.PI * this.r;
     }
 
     length(){

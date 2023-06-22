@@ -9,7 +9,7 @@ function approx_equals(a, b, delta=1e-6) {
 }
 
 function fix(x){
-    return Number.parseFloat(x).toFixed(8);
+    return parseFloat(Number.parseFloat(x).toFixed(8));
 }
 
 function center(vs) {
@@ -28,15 +28,35 @@ function center(vs) {
     return p;
 }
 
+function border(vs){
+    let min_x = Infinity; let max_x = -Infinity;
+    let min_y = Infinity; let max_y = -Infinity;
+    
+    for(let i = 0; i < vs.length; i++){
+        let v = vs[i];
+        min_x = Math.min(v.x, min_x); max_x = Math.max(v.x, max_x);
+        min_y = Math.min(v.y, min_y); max_y = Math.max(v.y, max_y);
+    }
+
+    let b = new Object();
+    b.min_x = min_x; b.max_x = max_x;
+    b.min_y = min_y; b.max_y = max_y;
+    return b;
+}
+
 export class SweepCurve extends Object3D {
-    constructor(gl, profile, path, step, closed=true) {
+    constructor(gl, profile, path, step, closed=true, u_scale = 1, v_scale = 1) {
         let h_div = path.length() / step + 4*closed;
         let v_div = profile.vs.length-1;
-        super(gl, h_div, v_div);
+        super(gl, h_div, v_div, u_scale, v_scale);
 
         this.closed = closed;
         this.profile = profile;
         this.path = path;
+        this.cumulative_distance = this.path.cumulative_distance(step);
+        this.step = step;
+        this.scale_u = 1;
+        this.scale_v = 1;
         this.initBuffers();
     }
 
@@ -112,9 +132,87 @@ export class SweepCurve extends Object3D {
         let zn = normalMatrix[8] * normal[0] + normalMatrix[9] * normal[1] + normalMatrix[10] * normal[2] + normalMatrix[11] * normal[3];
         return [xn, yn, zn];
     }
+
+    cumulative_perimeter(){
+        if(this.profile.cumulative_perimeter){
+            return this.profile.cumulative_perimeter;
+        }
+        const vs = this.profile.vs;
+        let cumulative = [];
+        let d = 0;
+        let prev_x = vs[0].x;
+        let prev_y = vs[0].y;
+        let prev_z = vs[0].z;
+        for(let i = 0; i < vs.length; i+=1){
+            const x = vs[i].x; const y = vs[i].y; const z = vs[i].z;
+
+            d += Math.sqrt((x-prev_x)*(x-prev_x) +
+                           (y-prev_y)*(y-prev_y) +
+                           (z-prev_z)*(z-prev_z));
+
+            cumulative.push(d);
+
+            prev_x = x; prev_y = y; prev_z = z;
+        }
+        this.profile.cumulative_perimeter = cumulative;
+        return this.profile.cumulative_perimeter;
+    }
+
+    homogenize_u(u){
+        // u recorre el poligono
+        const cumulative = this.cumulative_perimeter();
+        let vertex_n = Math.round(u*(this.profile.vs.length-1));
+
+        return cumulative[vertex_n] / cumulative[cumulative.length-1];
+    }
+
+    homogenize_v(v){
+        // v recorre la curva
+        const total_length = this.cumulative_distance[this.cumulative_distance.length-1];
+        const v_no = Math.round(v * 1/this.step * this.path.length())
+        return this.cumulative_distance[v_no] / total_length;
+    }
     
+    getCoverTextureCordenates(u, v){
+        const closed = this.closed;
+        let b = border(this.profile.vs);
+
+        if (closed && (approx_equals(v, -1/(this.rows-4)) || approx_equals(v, 1+1/(this.rows-4)))){
+            // Borde de la tapa inferior y superior
+            let vertex_n = Math.round(u*(this.profile.vs.length-1));
+            let p = this.profile.vs[vertex_n];
+            return [
+                fix((p.x-b.min_x)/(b.max_x-b.min_x)),
+                fix((p.y-b.min_y)/(b.max_y-b.min_y))
+            ];
+        }
+        // else if (closed && approx_equals(v, 1+2/(this.rows-4))) {    // v° == c
+        // Centro de la tapa inferior y superior
+        let c = center(this.profile.vs);
+        return [
+            fix((c.x-b.min_x)/(b.max_x-b.min_x)),
+            fix((c.y-b.min_y)/(b.max_y-b.min_y))
+        ];
+    }
+
+    is_v_from_cover(v){
+        return approx_equals(v, -2/(this.rows-4))  ||
+               approx_equals(v, -1/(this.rows-4))  ||
+               approx_equals(v, 1+1/(this.rows-4)) ||
+               approx_equals(v, 1+2/(this.rows-4));
+    }
+
     getTextureCordenates(u, v) {
-        // TODO
-        return [u,v];
+        const closed = this.closed;
+        if(closed)
+            v = this.rows/(this.rows-4)*v-2/(this.rows-4);
+        v = fix(v);
+
+        if (closed && this.is_v_from_cover(v)){
+            return this.getCoverTextureCordenates(u, v);
+        }
+
+        return [this.homogenize_u(fix(u)),
+                this.homogenize_v(fix(v))];
     }
 }

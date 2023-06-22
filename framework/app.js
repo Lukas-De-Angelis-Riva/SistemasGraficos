@@ -2,6 +2,9 @@ import { Plane } from './geometry/Plane.js';
 import { DronCamera, FollowerCamera, OrbitalCamera } from './Camera.js';
 import { Bridge, Ship, Terrain, TreeGenerator } from './geometry/World.js';
 import { Cube } from './geometry/Cube.js';
+import { SweepCurve } from './geometry/SweepCurve.js';
+import { Square } from './geometry/polygons/Square.js';
+import { QuadraticBezier } from './geometry/curves/QuadraticBezier.js';
 
 var time=0;
 
@@ -40,11 +43,42 @@ var dronCamera;
 var orbitalCamera;
 var followerCamera;
 
+var texture;
+
+function loadTextures(){
+    texture = gl.createTexture();
+    texture.image = new Image();
+
+    texture.image.onload = function () {
+        // Invierte el ejeY (?)
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        // Activo la textura
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+
+        // filtros de mini y magnificación
+        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        // Comienza el programa.
+        webGLStart();
+    }
+    // Desencadena la carga
+    texture.image.src = "textures/uv-grid.png";
+}
+
 function loadShaders(){
 
     $.when(loadVS(), loadFS()).done(function(res1,res2){
         //this code is executed when all ajax calls are done
-        webGLStart();
+        var canvas = document.getElementById("myCanvas");
+        initGL(canvas);
+
+        loadTextures();
     });
 
     function loadVS() {
@@ -161,7 +195,7 @@ function crearGeometria(){
     trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4);
 
     let H = 3*(app.H_river-1);
-    water = new Plane(gl, app.L_terrain, app.L_river+2);
+    water = new Plane(gl, app.L_terrain, app.L_river+2, 1, 1, 1, app.L_terrain/(app.L_river+2));
     water.translate(0, H, 0);
     water.setColor([.33, .70, .93]);
 
@@ -235,17 +269,25 @@ function initShaders() {
     shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
     gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
+    shaderProgram.vertexUv = gl.getAttribLocation(shaderProgram, "aVertexUv");
+    gl.enableVertexAttribArray(shaderProgram.vertexUv);
+
     shaderProgram.modelMatrixUniform = gl.getUniformLocation(shaderProgram, "modelMatrix");
     shaderProgram.viewMatrixUniform = gl.getUniformLocation(shaderProgram, "viewMatrix");
     shaderProgram.projMatrixUniform = gl.getUniformLocation(shaderProgram, "projMatrix");
     shaderProgram.normalMatrixUniform = gl.getUniformLocation(shaderProgram, "normalMatrix");
-    shaderProgram.vColorUniform = gl.getUniformLocation(shaderProgram, "vColor");
+
+    // texturas
+    shaderProgram.vColorUniform = gl.getUniformLocation(shaderProgram, "vColor"); // debería irse...
+    shaderProgram.texture = gl.getUniformLocation(shaderProgram, "texture");
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.uniform1i(shaderProgram.texture, 0);
 }
 
 function webGLStart() {
-    var canvas = document.getElementById("myCanvas");
-    initGL(canvas);
-    
+
     initShaders();
 
     dronCamera = new DronCamera(gl, 16, 13, 24);

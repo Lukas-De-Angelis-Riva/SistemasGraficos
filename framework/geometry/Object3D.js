@@ -4,7 +4,7 @@ var vec3=glMatrix.vec3;
 var vec4=glMatrix.vec4;
 
 export class Object3D {
-    constructor(gl, rows, columns) {
+    constructor(gl, rows, columns, u_scale = 1, v_scale = 1) {
         this.gl = gl;
 
         this.rows = rows;
@@ -24,6 +24,9 @@ export class Object3D {
 
         this.color=[0.7, 0.7, 0.7];
         this.childs = [];
+
+        this.u_scale = u_scale;
+        this.v_scale = v_scale;
     }
 
     /// Override
@@ -71,8 +74,8 @@ export class Object3D {
 
                 var uvs=this.getTextureCordenates(u,v);
 
-                this.uvBuffer.push(uvs[0]);
-                this.uvBuffer.push(uvs[1]);
+                this.uvBuffer.push(uvs[0]*this.u_scale);
+                this.uvBuffer.push(uvs[1]*this.v_scale);
             }
         }
 
@@ -137,13 +140,13 @@ export class Object3D {
         gl.uniformMatrix4fv(shaderProgram.normalMatrixUniform, false, normalMatrix);
 
         // color
-        gl.uniform3f(shaderProgram.vColorUniform, this.color[0],this.color[1],this.color[2]);
+        //gl.uniform3f(shaderProgram.vColorUniform, this.color[0],this.color[1],this.color[2]);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_position_buffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, this.webgl_position_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
-//        gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_uvs_buffer);
-//        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, this.webgl_uvs_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_uvs_buffer);
+        gl.vertexAttribPointer(shaderProgram.vertexUv, this.webgl_uvs_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_normal_buffer);
         gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, this.webgl_normal_buffer.itemSize, gl.FLOAT, false, 0, 0);

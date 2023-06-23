@@ -1,6 +1,7 @@
+import { gl } from "../app.js";
 import { SweepCurve } from "./SweepCurve.js";
-import { Sphere } from "./Sphere.js";
-import { System } from "./System.js";
+import { Sphere } from "./standard/Sphere.js";
+import { System } from "./standard/System.js";
 import { CubicBezier } from "./curves/CubicBezier.js";
 import { Line } from "./curves/Line.js";
 import { QuadraticBezier } from "./curves/QuadraticBezier.js";
@@ -13,6 +14,9 @@ import { Circumference } from "./curves/Circumference.js";
 
 import { QuadraticBSpline } from "./curves/QuadraticBSpline.js";
 import { Cuboid } from "./standard/Cuboid.js";
+
+import { TexturedShaderProgram } from '../shaders/TexturedShaderProgram.js';
+
 
 let grey =   [.80, .80, .80];
 let red =    [.75, 0.0, 0.0];
@@ -99,17 +103,20 @@ export class Bridge {
         let L_cable = Road.getXY(gl, us[1], L_road_curve, h1)[0]
                     - Road.getXY(gl, us[0], L_road_curve, h1)[0];
 
+
+        let cableShaderProgram = new TexturedShaderProgram(gl, "../textures/metal_wire.jpg");
         //                                      +0.5 to get into the road.
-        let cable1 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r);
+        let cable1 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r, cableShaderProgram);
         cable1.translate(0, a*h1+0.5, W_road/2-cable_r);
         sys.addChild(cable1);
 
-        let cable2 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r);
+        let cable2 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r, cableShaderProgram);
         cable2.translate(0, a*h1+0.5, -W_road/2+cable_r);
         sys.addChild(cable2);
 
-        let circ = new Circle(0.05, 4 /*div*/);
 
+        let suspenderShaderProgram = new TexturedShaderProgram(gl, "../textures/uv-grid.png"); // poner otra textura;
+        let circ = new Circle(0.05, 4 /*div*/);
         let startCable = Road.getXY(gl, us[0], L_road_curve, h1)[0];
         let endCable = Road.getXY(gl, us[1], L_road_curve, h1)[0];
         for(let x0 = startCable; x0 < endCable; x0+=s1){
@@ -119,27 +126,29 @@ export class Bridge {
             let line = new Line(gl, [x0, do_y-(a*h1+0.5), 0], [x0, up_y, 0]);
             let vsuspender = new SweepCurve(gl, circ, line, 1, false, 1, do_y-(a*h1+0.5)-up_y);
 
-            vsuspender.setColor(red);
+            vsuspender.attach(suspenderShaderProgram);
             cable1.addChild(vsuspender);
             cable2.addChild(vsuspender);
         }
 
-        let tower1 = new Tower(gl, r, h2);
+        let towerShaderProgram = new TexturedShaderProgram(gl, "../textures/uv-grid.png"); // poner otra textura;
+
+        let tower1 = new Tower(gl, r, h2, towerShaderProgram);
         tower1.translate(-2*L_cable/10, -h0, W_road/2-cable_r);
         tower1.rotateX(Math.PI/2);
         sys.addChild(tower1);
 
-        let tower2 = new Tower(gl, r, h2);
+        let tower2 = new Tower(gl, r, h2, towerShaderProgram);
         tower2.translate(-2*L_cable/10, -h0, -W_road/2+cable_r);
         tower2.rotateX(Math.PI/2);
         sys.addChild(tower2);
 
-        let tower3 = new Tower(gl, r, h2);
+        let tower3 = new Tower(gl, r, h2, towerShaderProgram);
         tower3.translate(2*L_cable/10, -h0, W_road/2-cable_r);
         tower3.rotateX(Math.PI/2);
         sys.addChild(tower3);
 
-        let tower4 = new Tower(gl, r, h2);
+        let tower4 = new Tower(gl, r, h2, towerShaderProgram);
         tower4.translate(2*L_cable/10, -h0, -W_road/2+cable_r);
         tower4.rotateX(Math.PI/2);
         sys.addChild(tower4);
@@ -208,7 +217,7 @@ export class Terrain {
         line.setBinor(0, 1, 0);
 
         let t = new MovingSweepCurve(gl, terrain_curve, 0.05, line, 0.01, false);
-        t.setColor(green);
+        t.attach(new TexturedShaderProgram(gl, "../textures/pasto1.jpg"));
         return t;
     }
 }
@@ -268,7 +277,17 @@ class Road {
 
         this.path = new Path(gl, [path1, path2, path3]);
         this.path.setBinor(0,1,0);
-        return new SweepCurve(gl, this.profile, this.path, 0.1, true, 1, 10);
+
+        let road = new SweepCurve(gl, this.profile, this.path, 0.1, true, 1, 10);
+        road.attach(new TexturedShaderProgram(gl, "../textures/uv-grid.png"));
+
+        let roadAsphaltProfile = new Polygon(profile3.discretization(1));
+        let roadAsphalt = new SweepCurve(gl, roadAsphaltProfile, this.path, 0.1, true, 1, 10);
+        roadAsphalt.attach(new TexturedShaderProgram(gl, "../textures/tramo-doblemarilla.jpg"));
+        roadAsphalt.translate(0, 0.005, 0);
+        road.addChild(roadAsphalt);
+
+        return road;
     }
 
     // h from 0 to 1 (high = h * h1s)
@@ -302,7 +321,7 @@ class Road {
 }
 
 class Tower {
-    constructor(gl, r=1, h2=10) {
+    constructor(gl, r=1, h2=10, shaderProgram) {
         let line_h = 0.30;
         let curve_h = (1-3*line_h)/2;
 
@@ -336,13 +355,13 @@ class Tower {
         let profile = new Polygon(profile_array);
 
         let t = Revolution.fromPolygon(gl, 10, profile, true, 5, 1);
-        t.setColor(red);
+        t.attach(shaderProgram);
         return t;
     }
 }
 
 class Cable {
-    constructor(gl, L, startY, H, r){
+    constructor(gl, L, startY, H, r, shaderProgram){
         let curve1 = new QuadraticBezier(gl, [[-L/2, startY, 0], [-3*L/10, startY, 0], [-2*L/10, startY+H, 0]]);
         let curve2 = new QuadraticBezier(gl, [[-2*L/10, startY+H, 0], [0, startY-H/3, 0], [2*L/10, startY+H, 0]]);
         let curve3 = new QuadraticBezier(gl, [[2*L/10, startY+H, 0], [3*L/10, startY, 0], [L/2, startY, 0]]);
@@ -353,7 +372,7 @@ class Cable {
         let circ_profile = new Polygon(circ.discretization(0.25));
 
         let c = new SweepCurve(gl, circ_profile, curve, 0.01, true, 1, 20);
-        c.setColor(red);
+        c.attach(shaderProgram);
         return c;
     }
     // h from 0 to 1 (high = h * h1s)
@@ -419,18 +438,18 @@ function generateRandomXZ(N, L, W_road, W_river){
 }
 
 export class TreeGenerator {
-    static randomTree(gl, x, y, z){
+    static randomTree(gl, x, y, z, leavesShaderProgram, trunkShaderProgram){
         let r = 0.25 + 0.1*(Math.random()-1);
         let h = 0.50 + 0.25*(Math.random()-1);
 
         let dice = generateRandom(0, 3);
         var tree;
         if(dice == 0){
-            tree = new LargeTree(gl, r, h);
+            tree = new LargeTree(gl, r, h, leavesShaderProgram, trunkShaderProgram);
         } else if (dice == 1){
-            tree = new SphereTree(gl, r, h);
+            tree = new SphereTree(gl, r, h, leavesShaderProgram, trunkShaderProgram);
         } else {
-            tree = new PineTree(gl, r, h);
+            tree = new PineTree(gl, r, h, leavesShaderProgram, trunkShaderProgram);
         }
 
         tree.translate(x,y,z);
@@ -438,11 +457,11 @@ export class TreeGenerator {
         tree.rotateY(rand_rad);
         return tree;
 }
-    static generate(gl, N, L, W_road, W_river){
+    static generate(gl, N, L, W_road, W_river, leavesShaderProgram, trunkShaderProgram){
         let trees = [];
         let coordinates = generateRandomXZ(N, L, W_road, W_river);
         for(let i = 0; i < N; i++){
-            let tree = this.randomTree(gl, coordinates[i][0], 0.25, coordinates[i][1]);
+            let tree = this.randomTree(gl, coordinates[i][0], 0.25, coordinates[i][1], leavesShaderProgram, trunkShaderProgram);
             trees.push(tree);
         }
         return trees;
@@ -450,16 +469,17 @@ export class TreeGenerator {
 }
 
 class SphereTree {
-    constructor(gl, r, h){
+    constructor(gl, r, h, leavesShaderProgram, trunkShaderProgram){
         let circ = new Circle(h/4, 20 /*div*/);
         let trunk_path = new CubicBezier(gl, [[0,0,0], [0, 3*h/2, 0], [h/2, 3*h, 0], [h/2, 9*h/2, 0]]);
         trunk_path.setBinor(0, 0, 1);
         let trunk = new SweepCurve(gl, circ, trunk_path, 0.20, true);
-        trunk.setColor(brown);
+        trunk.attach(trunkShaderProgram);
 
         let crown = new Sphere(gl, 2*r, 10, 10);
+        crown.attach(leavesShaderProgram);
         crown.translate(h/2, 9*h/2, 0);
-        crown.setColor(seagreen);
+
         let tree = new System(gl);
         tree.addChild(trunk);
         tree.addChild(crown);
@@ -468,13 +488,14 @@ class SphereTree {
 }
 
 class PineTree {
-    constructor(gl, r, H){
+    constructor(gl, r, H, leavesShaderProgram, trunkShaderProgram){
         H *= 6;
         let h = H*0.45;
         let circ = new Circle(r, 20 /*div*/);
         let trunk_path = new Line(gl, [0, 0, 0], [0, H-2*h, 0]);
         trunk_path.setBinor(0, 0, 1);
         let trunk = new SweepCurve(gl, circ, trunk_path, 1, true);
+        trunk.attach(trunkShaderProgram);
 
         let mPh = function(p){
             return [p[0], p[1]-h/2, p[2]];
@@ -490,7 +511,7 @@ class PineTree {
         let crown_curve = new Path(gl, [curve1, curve2, curve3]);
         crown_curve.setBinor(0, 0, -1);
         let crown = Revolution.fromCurve(gl, 20, crown_curve, 0.20, false);
-        crown.setColor(seagreen);
+        crown.attach(leavesShaderProgram);
         crown.rotateX(Math.PI/2);
 
         let tree = new System(gl);
@@ -502,12 +523,12 @@ class PineTree {
 }
 
 class LargeTree {
-    constructor(gl, r, h){
+    constructor(gl, r, h, leavesShaderProgram, trunkShaderProgram){
         let circ = new Circle(r, 20 /*div*/);
         let trunk_path = new Line(gl, [0, 0,0], [0, h, 0]);
         trunk_path.setBinor(0, 0, 1);
         let trunk = new SweepCurve(gl, circ, trunk_path, 1, true);
-        trunk.setColor(brown);
+        trunk.attach(trunkShaderProgram);
 
         let p0 = [r, h, 0]; let p1 = [3*r/2, 1.2*h, 0]; let p1_ = [3*r/2+1e-6, 1.2*h, 0];
         let p2 = [r, 2*h, 0];
@@ -518,7 +539,7 @@ class LargeTree {
         let curve = new Path(gl, [curve1, curve2]);
 
         let crown = Revolution.fromCurve(gl, 20, curve, 0.20, false);
-        crown.setColor(seagreen);
+        crown.attach(leavesShaderProgram);
         crown.rotateX(Math.PI/2);
 
         let tree = new System(gl);

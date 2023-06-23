@@ -19,9 +19,7 @@ export class FollowerCamera {
         this.up = [0, 1, 0];
     }
 
-    look(shaderProgram){
-        const gl = this.gl;
-        
+    look(){        
         let viewPoint = this.followingObject.relative([0,0,0]);
         let position = this.followingObject.relative(this.xyz);
 
@@ -31,7 +29,7 @@ export class FollowerCamera {
             viewPoint,
             this.up
         );
-        gl.uniformMatrix4fv(shaderProgram.viewMatrixUniform, false, viewMatrix);
+        return viewMatrix;
     }
 
     turnSide(rad){}
@@ -68,8 +66,7 @@ export class DronCamera {
         this.b = 0;
     }
 
-    look(shaderProgram){
-        const gl = this.gl;
+    look(){
         const b = this.b;
 
         let viewDir = vec3.create();
@@ -86,7 +83,7 @@ export class DronCamera {
             this.up
         );
 
-        gl.uniformMatrix4fv(shaderProgram.viewMatrixUniform, false, this.viewMatrix);
+        return this.viewMatrix;
     }
 
     moveForward(intensity){
@@ -155,8 +152,7 @@ export class OrbitalCamera {
         this.up = [0,1,0];
     }
 
-    look(shaderProgram){
-        const gl = this.gl;
+    look(){
         const a = this.a;
         const b = this.b;
         const r = this.r;
@@ -172,7 +168,7 @@ export class OrbitalCamera {
             this.up
         );
 
-        gl.uniformMatrix4fv(shaderProgram.viewMatrixUniform, false, viewMatrix);
+        return viewMatrix;
     }
 
     turnSide(intensity){

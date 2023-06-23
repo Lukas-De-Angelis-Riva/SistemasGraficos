@@ -1,5 +1,4 @@
-import { Object3D } from "./Object3D.js";
-import { Vertex } from "./polygons/Vertex.js";
+import { Object3D } from "./standard/Object3D.js";
 var mat4=glMatrix.mat4;
 var vec4=glMatrix.vec4;
 var vec3=glMatrix.vec3;

@@ -1,4 +1,4 @@
-import { Object3D } from "../Object3D.js";
+import { Object3D } from "./Object3D.js";
 
 const DELTA = 1e-3;
 

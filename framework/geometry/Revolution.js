@@ -1,4 +1,3 @@
-import { Object3D } from "./Object3D.js";
 import { SweepCurve } from "./SweepCurve.js";
 import { Circumference } from "./curves/Circumference.js";
 import { Polygon } from "./polygons/Polygon.js";

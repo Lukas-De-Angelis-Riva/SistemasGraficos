@@ -1,19 +1,14 @@
-import { Plane } from './geometry/Plane.js';
 import { DronCamera, FollowerCamera, OrbitalCamera } from './Camera.js';
 import { Bridge, Ship, Terrain, TreeGenerator } from './geometry/World.js';
-import { Cube } from './geometry/Cube.js';
-import { SweepCurve } from './geometry/SweepCurve.js';
-import { Square } from './geometry/polygons/Square.js';
-import { QuadraticBezier } from './geometry/curves/QuadraticBezier.js';
 import { Cuboid } from './geometry/standard/Cuboid.js';
-
+import { Plane } from  './geometry/standard/Plane.js';
+import { SkyBoxShaderProgram } from './shaders/SkyBoxShaderProgram.js';
+import { TexturedShaderProgram } from './shaders/TexturedShaderProgram.js';
 var time=0;
 
-var gl;
+export var gl;
 var mat4=glMatrix.mat4;
-var mat3=glMatrix.mat3;
-var vec3=glMatrix.vec3;
-    
+
 var $canvas=$("#myCanvas");
 var aspect=$canvas.width()/$canvas.height();
 
@@ -31,11 +26,6 @@ var app={
     show_normals:'No'
 };
 
-var vertexShaderFile="vertex-shader.glsl";
-var vertexShaderSource;
-var fragmentShaderSource;
-var shaderProgram;
-
 var matrizProyeccion = mat4.create();
 var parent = mat4.identity(mat4.create());
 
@@ -43,87 +33,6 @@ var camera;
 var dronCamera;
 var orbitalCamera;
 var followerCamera;
-
-var texture;
-
-function loadTextures(){
-    texture = gl.createTexture();
-    texture.image = new Image();
-
-    texture.image.onload = function () {
-        // Invierte el ejeY (?)
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        // Activo la textura
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-        // filtros de mini y magnificación
-        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-        
-//        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        // Comienza el programa.
-        webGLStart();
-    }
-    // Desencadena la carga
-    texture.image.src = "textures/uv-grid.png";
-}
-
-function loadShaders(){
-
-    $.when(loadVS(), loadFS()).done(function(res1,res2){
-        //this code is executed when all ajax calls are done
-        var canvas = document.getElementById("myCanvas");
-        initGL(canvas);
-
-        loadTextures();
-    });
-
-    function loadVS() {
-        return  $.ajax({
-            url: "shaders/"+vertexShaderFile,
-            success: function(result){
-                vertexShaderSource=result;
-            }
-        });
-    }
-
-    function loadFS() {
-        return  $.ajax({
-            url: "shaders/fragment-shader.glsl",
-            success: function(result){
-                fragmentShaderSource=result;
-            }
-        });
-    }
-}
-
-function getShader(gl,code,type) {
-
-    var shader;
-
-    if (type == "fragment") 
-        shader = gl.createShader(gl.FRAGMENT_SHADER);
-    else // "vertex"
-        shader = gl.createShader(gl.VERTEX_SHADER);
-    
-    gl.shaderSource(shader, code);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error(gl.getShaderInfoLog(shader));
-        return null;
-    }
-    return shader;
-}
 
 function initGL(canvas) {
 
@@ -162,12 +71,11 @@ function drawScene() {
 
     // Definimos la ubicación de la camara
     
-    camera.look(shaderProgram);
 
-    gl.uniformMatrix4fv(shaderProgram.mMatrixUniform, false, mat4.identity(mat4.create()));
-    gl.uniformMatrix4fv(shaderProgram.projMatrixUniform, false, matrizProyeccion);
+    let viewMatrix = camera.look();
+    let projMatrix = matrizProyeccion;
 
-    dibujarGeometria();
+    dibujarGeometria(viewMatrix, projMatrix);
 }
 
 function tick() {
@@ -200,10 +108,15 @@ var trees;
 var cuboid;
 function crearGeometria(){
     cuboid = new Cuboid(gl, 400, 400, 400);
-    trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4);
+    cuboid.attach(new SkyBoxShaderProgram(gl, "textures/square-sky-box.png"));
+
+    let leavesShaderProgram = new TexturedShaderProgram(gl, "textures/hojas.jpg");
+    let trunkShaderProgram = new TexturedShaderProgram(gl, "textures/tronco.jpg");
+    trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4, leavesShaderProgram, trunkShaderProgram);
 
     let H = 3*(app.H_river-1);
     water = new Plane(gl, app.L_terrain, app.L_river+2, 1, 1, 1, app.L_terrain/(app.L_river+2));
+    water.attach(new TexturedShaderProgram(gl, "textures/aguaDeMar.jpg"));
     water.translate(0, H, 0);
     water.setColor([.33, .70, .93]);
 
@@ -218,16 +131,17 @@ function crearGeometria(){
     followerCamera = new FollowerCamera(gl, [0, 2, -5], ship);
 }
 
-function dibujarGeometria(){
+function dibujarGeometria(viewMatrix, projMatrix){
     let showNormals = app.show_normals != "No";
-    cuboid.render(shaderProgram, parent, showNormals);
+
+    cuboid.render(viewMatrix, projMatrix, parent, showNormals);
     trees.forEach(t => {
-        t.render(shaderProgram, parent, showNormals);
+        t.render(viewMatrix, projMatrix, parent, showNormals);
     });
-    water.render(shaderProgram, parent, showNormals);
-    terrain.render(shaderProgram, parent, showNormals);
-    bridge.render(shaderProgram, parent, showNormals);
-    ship.render(shaderProgram, parent, showNormals);
+    water.render(viewMatrix, projMatrix, parent, showNormals);
+    terrain.render(viewMatrix, projMatrix, parent, showNormals);
+    bridge.render(viewMatrix, projMatrix, parent, showNormals);
+    ship.render(viewMatrix, projMatrix, parent, showNormals);
 }
 
 function initMenu(){
@@ -257,47 +171,7 @@ function initMenu(){
     f4.add(app, 'show_normals',["Sí","No"]).name("Mostrar normales: ");
 }
 
-function initShaders() {
-
-    var fragmentShader = getShader(gl, vertexShaderSource, "vertex");
-    var vertexShader = getShader(gl, fragmentShaderSource, "fragment");
-
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert("Could not initialise shaders");
-    }
-    gl.useProgram(shaderProgram);
-
-    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-    shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
-    gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
-
-    shaderProgram.vertexUv = gl.getAttribLocation(shaderProgram, "aVertexUv");
-    gl.enableVertexAttribArray(shaderProgram.vertexUv);
-
-    shaderProgram.modelMatrixUniform = gl.getUniformLocation(shaderProgram, "modelMatrix");
-    shaderProgram.viewMatrixUniform = gl.getUniformLocation(shaderProgram, "viewMatrix");
-    shaderProgram.projMatrixUniform = gl.getUniformLocation(shaderProgram, "projMatrix");
-    shaderProgram.normalMatrixUniform = gl.getUniformLocation(shaderProgram, "normalMatrix");
-
-    // texturas
-    shaderProgram.vColorUniform = gl.getUniformLocation(shaderProgram, "vColor"); // debería irse...
-    shaderProgram.texture = gl.getUniformLocation(shaderProgram, "texture");
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(shaderProgram.texture, 0);
-}
-
 function webGLStart() {
-
-    initShaders();
 
     dronCamera = new DronCamera(gl, 16, 13, 24);
     orbitalCamera = new OrbitalCamera(gl, 30, Math.PI/4, 3*Math.PI/8);
@@ -360,9 +234,9 @@ document.addEventListener('keyup', function(event) {
     if(event.key == 'a' || event.key == 'A') movement.left = false;
     if(event.key == 's' || event.key == 'S') movement.back = false;
     if(event.key == 'd' || event.key == 'D') movement.right = false;
-    if(event.key == 'w' || event.key == 'w') movement.front = false;
+    if(event.key == 'w' || event.key == 'W') movement.front = false;
     if(event.key == ' ') movement.up = false;
-    if(event.key == 'z' || event.key == 'z') movement.down = false;
+    if(event.key == 'z' || event.key == 'Z') movement.down = false;
 
     if(event.key == 'ArrowRight') movement.turnright = false;
     if(event.key == 'ArrowLeft') movement.turnleft = false;
@@ -399,5 +273,9 @@ document.addEventListener('wheel', function(event) {
 
 // cuando el documento HTML esta completo, iniciamos la aplicación
 $(document).ready(function(){
-    loadShaders();
+    var canvas = document.getElementById("myCanvas");
+    initGL(canvas);
+
+    // Comienza el programa.
+    webGLStart();
 })

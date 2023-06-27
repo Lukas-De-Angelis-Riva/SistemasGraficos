@@ -32,18 +32,45 @@ varying vec3 vPosWorld;
 
 uniform sampler2D textureSampler;
 
+// Assuming directional light.
+uniform vec3 lightDir;
+uniform vec3 lightColor;
+
+uniform vec3 eyePos;
+
+uniform float alpha;
+uniform float specIntensity;
+
 varying highp vec2 vUv;
 
 void main(void) {
-    //vec3 color = vec3(0.1, 0.1+0.001*vPosWorld.y, 0.1);
-    vec3 color = texture2D(textureSampler, vUv).xyz;
+    vec3 backColor = texture2D(textureSampler, vUv).xyz;
+
+    // Ambient
+    vec3 ambient = backColor * vec3(0.3, 0.3, 0.3);
+
+    // Diffuse
+    vec3 l = -lightDir;
+    vec3 n = vNormal;
+    vec3 diffuse = backColor * max(dot(n, l), 0.0) * lightColor;
+
+    // Specular
+    vec3 v = normalize(eyePos - vPosWorld);
+    vec3 r = reflect(lightDir, vNormal);
+    vec3 specular = vec3(specIntensity, specIntensity, specIntensity) * pow(max(dot(r,v), 0.0), alpha) * lightColor;
+
+    vec3 color = ambient + diffuse + specular;
     gl_FragColor = vec4(color,1.0);
 }
 `
 
-export class TexturedShaderProgram {
-    constructor(gl, src){
+export class PhongShaderProgram {
+    constructor(gl, src, lightDir, lightColor, alpha, specIntensity=1){
         this.gl = gl;
+        this.lightDir = lightDir;
+        this.lightColor = lightColor;
+        this.alpha = alpha;
+        this.specIntensity = specIntensity;
 
         this.texture = null;
         this.initTexture(src);
@@ -114,6 +141,12 @@ export class TexturedShaderProgram {
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.uniform1i(this.textureSamplerUniforme, 0);
 
+        // Phong
+        this.aLightColor = gl.getUniformLocation(shaderProgram, "lightColor");
+        this.aLightDir = gl.getUniformLocation(shaderProgram, "lightDir")
+        this.aEyePos = gl.getUniformLocation(shaderProgram, "eyePos");
+        this.anAlpha = gl.getUniformLocation(shaderProgram, "alpha");
+        this.anSpecIntensity = gl.getUniformLocation(shaderProgram, "specIntensity");
         return shaderProgram;
     }
 
@@ -169,6 +202,12 @@ export class TexturedShaderProgram {
 
     draw(indexBuffer, eyePos){
         const gl = this.gl;
+
+        gl.uniform3f(this.aLightColor, this.lightColor[0], this.lightColor[1], this.lightColor[2]);
+        gl.uniform3f(this.aLightDir, this.lightDir[0], this.lightDir[1], this.lightDir[2]);
+        gl.uniform3f(this.aEyePos, eyePos[0], eyePos[1], eyePos[2]);
+        gl.uniform1f(this.anAlpha, this.alpha);
+        gl.uniform1f(this.anSpecIntensity, this.specIntensity);
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);

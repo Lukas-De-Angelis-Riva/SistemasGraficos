@@ -21,14 +21,14 @@ export class System extends Object3D {
 
     initBuffers() {}
 
-    render(viewMatrix, projMatrix, parentMatrix=null, showNormals = false) {
+    render(viewMatrix, projMatrix, eyePos, parentMatrix=null, showNormals = false) {
         if(!parentMatrix)
             parentMatrix = mat4.identity(mat4.create());
 
         let m = mat4.create();
         mat4.multiply(m, parentMatrix, this.modelMatrix);
         
-        this.childs.forEach((o, i) => o.render(viewMatrix, projMatrix, m, showNormals));
+        this.childs.forEach((o, i) => o.render(viewMatrix, projMatrix, eyePos, m, showNormals));
     }
 
     renderNormal(){}

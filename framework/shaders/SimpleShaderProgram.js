@@ -104,7 +104,7 @@ export class SimpleShaderProgram {
         gl.enableVertexAttribArray(this.vertexPositionAttribute);
     }
 
-    draw(indexBuffer){
+    draw(indexBuffer, eyePos){
         const gl = this.gl;
 
         gl.drawElements(gl.TRIANGLE_STRIP, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);

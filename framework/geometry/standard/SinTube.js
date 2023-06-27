@@ -46,7 +46,6 @@ export class SinTube extends Object3D {
     }
 
     getTextureCordenates(u, v) {
-        // TO DO
-        return [0.5, 0];
+        return [u, v];
     }
 }

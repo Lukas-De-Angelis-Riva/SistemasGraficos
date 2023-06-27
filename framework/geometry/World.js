@@ -16,6 +16,7 @@ import { QuadraticBSpline } from "./curves/QuadraticBSpline.js";
 import { Cuboid } from "./standard/Cuboid.js";
 
 import { TexturedShaderProgram } from '../shaders/TexturedShaderProgram.js';
+import { PhongShaderProgram } from "../shaders/PhongShaderProgram.js";
 
 
 let grey =   [.80, .80, .80];
@@ -80,7 +81,7 @@ export class Ship {
 }
 
 export class Bridge {
-    constructor(gl, h1=4, h2=14, a=0.4, L_road_line = 15, L_road_curve=30, s1=1){
+    constructor(gl, h1=4, h2=14, a=0.4, L_road_line = 15, L_road_curve=30, s1=1, lightDir, lightColor){
         let h0 = 2.5;       // distance from startTower to minRoad
         // h1               // distance from minRoad to maxCurveRoad
         // h2               // Total heigth of the tower
@@ -96,15 +97,14 @@ export class Bridge {
 
         let sys = new System(gl);
 
-        let road = new Road(gl, h1, L_road_line, L_road_curve, W_road);
+        let road = new Road(gl, h1, L_road_line, L_road_curve, W_road, lightDir, lightColor);
         sys.addChild(road);
 
         let us = Road.getLevel(gl, L_road_curve, h1, a);
         let L_cable = Road.getXY(gl, us[1], L_road_curve, h1)[0]
                     - Road.getXY(gl, us[0], L_road_curve, h1)[0];
 
-
-        let cableShaderProgram = new TexturedShaderProgram(gl, "../textures/metal_wire.jpg");
+        let cableShaderProgram = new PhongShaderProgram(gl, "../textures/metal_wire.jpg", lightDir, lightColor, 5.);
         //                                      +0.5 to get into the road.
         let cable1 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r, cableShaderProgram);
         cable1.translate(0, a*h1+0.5, W_road/2-cable_r);
@@ -115,7 +115,7 @@ export class Bridge {
         sys.addChild(cable2);
 
 
-        let suspenderShaderProgram = new TexturedShaderProgram(gl, "../textures/uv-grid.png"); // poner otra textura;
+        let suspenderShaderProgram = new PhongShaderProgram(gl, "../textures/uv-grid.png", lightDir, lightColor, 1.); // poner otra textura;
         let circ = new Circle(0.05, 4 /*div*/);
         let startCable = Road.getXY(gl, us[0], L_road_curve, h1)[0];
         let endCable = Road.getXY(gl, us[1], L_road_curve, h1)[0];
@@ -131,7 +131,7 @@ export class Bridge {
             cable2.addChild(vsuspender);
         }
 
-        let towerShaderProgram = new TexturedShaderProgram(gl, "../textures/uv-grid.png"); // poner otra textura;
+        let towerShaderProgram = new PhongShaderProgram(gl, "../textures/uv-grid.png", lightDir, lightColor, 10.); // poner otra textura;
 
         let tower1 = new Tower(gl, r, h2, towerShaderProgram);
         tower1.translate(-2*L_cable/10, -h0, W_road/2-cable_r);
@@ -223,7 +223,7 @@ export class Terrain {
 }
 
 class Road {
-    constructor(gl, h1 = 2, L_line=5, L_curve=5, A=6) {
+    constructor(gl, h1 = 2, L_line=5, L_curve=5, A=6, lightDir, lightColor) {
         let m1x = function(p){
             return [-p[0], p[1], p[2]];
         }
@@ -279,11 +279,11 @@ class Road {
         this.path.setBinor(0,1,0);
 
         let road = new SweepCurve(gl, this.profile, this.path, 0.1, true, 1, 10);
-        road.attach(new TexturedShaderProgram(gl, "../textures/uv-grid.png"));
+        road.attach(new PhongShaderProgram(gl, "../textures/uv-grid.png", lightDir, lightColor, 10., 0.9));
 
         let roadAsphaltProfile = new Polygon(profile3.discretization(1));
         let roadAsphalt = new SweepCurve(gl, roadAsphaltProfile, this.path, 0.1, true, 1, 10);
-        roadAsphalt.attach(new TexturedShaderProgram(gl, "../textures/tramo-doblemarilla.jpg"));
+        roadAsphalt.attach(new PhongShaderProgram(gl, "../textures/tramo-doblemarilla.jpg", lightDir, lightColor, 10., 0.25));
         roadAsphalt.translate(0, 0.005, 0);
         road.addChild(roadAsphalt);
 

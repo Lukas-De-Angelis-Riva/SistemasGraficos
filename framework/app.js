@@ -2,6 +2,7 @@ import { DronCamera, FollowerCamera, OrbitalCamera } from './Camera.js';
 import { Bridge, Ship, Terrain, TreeGenerator } from './geometry/World.js';
 import { Cuboid } from './geometry/standard/Cuboid.js';
 import { Plane } from  './geometry/standard/Plane.js';
+import { PhongShaderProgram } from './shaders/PhongShaderProgram.js';
 import { SkyBoxShaderProgram } from './shaders/SkyBoxShaderProgram.js';
 import { TexturedShaderProgram } from './shaders/TexturedShaderProgram.js';
 var time=0;
@@ -106,24 +107,28 @@ var ship;
 var trees;
 
 var cuboid;
+
 function crearGeometria(){
+    let lightDir = [-0.294375, -0.718125, 0.630625];
+    let lightColor = [1,1,1];
+
     cuboid = new Cuboid(gl, 400, 400, 400);
     cuboid.attach(new SkyBoxShaderProgram(gl, "textures/square-sky-box.png"));
 
-    let leavesShaderProgram = new TexturedShaderProgram(gl, "textures/hojas.jpg");
-    let trunkShaderProgram = new TexturedShaderProgram(gl, "textures/tronco.jpg");
+    let leavesShaderProgram = new PhongShaderProgram(gl, "textures/hojas.jpg", lightDir, lightColor, 1., 0.);
+    let trunkShaderProgram = new PhongShaderProgram(gl, "textures/tronco.jpg", lightDir, lightColor, 1., 0.);
     trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4, leavesShaderProgram, trunkShaderProgram);
 
     let H = 3*(app.H_river-1);
     water = new Plane(gl, app.L_terrain, app.L_river+2, 1, 1, 1, app.L_terrain/(app.L_river+2));
-    water.attach(new TexturedShaderProgram(gl, "textures/aguaDeMar.jpg"));
+    water.attach(new PhongShaderProgram(gl, "textures/aguaDeMar.jpg", lightDir, lightColor, 100.0));
     water.translate(0, H, 0);
     water.setColor([.33, .70, .93]);
 
     terrain = new Terrain(gl, app.L_terrain/2, app.L_river);
     terrain.translate(0, 0.25, 0);
 
-    bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, (app.L_terrain/2-app.L_road_curve/2), app.L_road_curve, app.s1);
+    bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, (app.L_terrain/2-app.L_road_curve/2), app.L_road_curve, app.s1, lightDir, lightColor);
 
     ship = new Ship(gl, 4);
     ship.translate(0, H+0.25, app.L_terrain/2-3.5);
@@ -132,16 +137,17 @@ function crearGeometria(){
 }
 
 function dibujarGeometria(viewMatrix, projMatrix){
+    let eyePos = camera.eyePos();
     let showNormals = app.show_normals != "No";
-
-    cuboid.render(viewMatrix, projMatrix, parent, showNormals);
+    
+    cuboid.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     trees.forEach(t => {
-        t.render(viewMatrix, projMatrix, parent, showNormals);
+        t.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     });
-    water.render(viewMatrix, projMatrix, parent, showNormals);
-    terrain.render(viewMatrix, projMatrix, parent, showNormals);
-    bridge.render(viewMatrix, projMatrix, parent, showNormals);
-    ship.render(viewMatrix, projMatrix, parent, showNormals);
+    water.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+    terrain.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+    bridge.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+    ship.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
 }
 
 function initMenu(){

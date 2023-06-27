@@ -37,6 +37,10 @@ export class FollowerCamera {
     tunrUp(rad){}
 
     move(movement){}
+
+    eyePos(){
+        return this.followingObject.relative(this.xyz);
+    }
 }
 
 export class DronCamera {
@@ -131,6 +135,10 @@ export class DronCamera {
         if (movement.turnup) this.tunrUp(1);
         if (movement.turndown) this.tunrUp(-1);
     }
+
+    eyePos(){
+        return this.position;
+    }
 }
 
 export class OrbitalCamera {
@@ -218,5 +226,17 @@ export class OrbitalCamera {
         this.r = limit(this.r-OrbitalCamera.DELTA_R,
             OrbitalCamera.MIN_ZOOM,
             OrbitalCamera.MAX_ZOOM);
+    }
+
+    eyePos(){
+        const a = this.a;
+        const b = this.b;
+        const r = this.r;
+
+        let x = r * Math.sin(a) * Math.sin(b);
+        let y = r * Math.cos(b);
+        let z = r * Math.cos(a) * Math.sin(b);
+
+        return [x,y,z];
     }
 }

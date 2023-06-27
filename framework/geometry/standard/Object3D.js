@@ -129,7 +129,7 @@ export class Object3D {
         this.webgl_index_buffer.numItems = indexBuffer.length;
     }
 
-    render(viewMatrix, projMatrix, parentMatrix=null, showNormals=false) {
+    render(viewMatrix, projMatrix, eyePos, parentMatrix=null, showNormals=false) {
         if(!this.shaderProgram)
             throw new Error("No shader-program attached");
 
@@ -146,7 +146,7 @@ export class Object3D {
             this.webgl_normal_buffer,
             this.webgl_index_buffer);
 
-        this.shaderProgram.draw(this.webgl_index_buffer);
+        this.shaderProgram.draw(this.webgl_index_buffer, eyePos);
 
 
         // Activar o desactivar si se quieren (o no) ver las normales
@@ -155,7 +155,7 @@ export class Object3D {
         }
         //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-        this.childs.forEach((o, i) => o.render(viewMatrix, projMatrix, m, showNormals));
+        this.childs.forEach((o, i) => o.render(viewMatrix, projMatrix, eyePos, m, showNormals));
     }
 
     renderNormal(){

@@ -1,5 +1,12 @@
 var mat4=glMatrix.mat4;
 
+function emptyBuffer(gl){
+    let buff = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buff);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW);
+    return buff;
+}
+
 var vertex_shader = `
 precision highp float;
 
@@ -94,12 +101,18 @@ export class TexturedShaderProgram {
         // Buffers
         this.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
         gl.enableVertexAttribArray(this.vertexPositionAttribute);
- 
+        gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
+        gl.vertexAttribPointer(this.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
         this.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
         gl.enableVertexAttribArray(this.vertexNormalAttribute);
+        gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
+        gl.vertexAttribPointer(this.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
 
         this.vertexUv = gl.getAttribLocation(shaderProgram, "aVertexUv");
         gl.enableVertexAttribArray(this.vertexUv);
+        gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
+        gl.vertexAttribPointer(this.vertexUv, 2, gl.FLOAT, false, 0, 0);
 
         // Matrixs
         this.modelMatrixUniform = gl.getUniformLocation(shaderProgram, "modelMatrix");
@@ -145,7 +158,7 @@ export class TexturedShaderProgram {
         gl.uniformMatrix4fv(this.viewMatrixUniform, false, viewMatrix);
     }
 
-    setUpBuffers(positionBuffer, uvsBuffer, normalBuffer, indexBuffer){
+    setUpBuffers(positionBuffer, uvsBuffer, normalBuffer, tangentBuffer, binormalBuffer, indexBuffer){
         const gl = this.gl;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -156,8 +169,6 @@ export class TexturedShaderProgram {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
         gl.vertexAttribPointer(this.vertexNormalAttribute, normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     }
 
     setUpPositionBuffer(positionBuffer){
@@ -174,6 +185,7 @@ export class TexturedShaderProgram {
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.uniform1i(this.textureSamplerUniforme, 0);
 
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
         gl.drawElements(gl.TRIANGLE_STRIP, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
 

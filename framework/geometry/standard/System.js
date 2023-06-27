@@ -27,7 +27,7 @@ export class System extends Object3D {
 
         let m = mat4.create();
         mat4.multiply(m, parentMatrix, this.modelMatrix);
-        
+
         this.childs.forEach((o, i) => o.render(viewMatrix, projMatrix, eyePos, m, showNormals));
     }
 

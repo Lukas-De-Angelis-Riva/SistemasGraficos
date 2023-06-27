@@ -17,6 +17,7 @@ import { Cuboid } from "./standard/Cuboid.js";
 
 import { TexturedShaderProgram } from '../shaders/TexturedShaderProgram.js';
 import { PhongShaderProgram } from "../shaders/PhongShaderProgram.js";
+import { NormalMapShaderProgram } from "../shaders/NormalMapShaderProgram.js";
 
 
 let grey =   [.80, .80, .80];
@@ -104,7 +105,9 @@ export class Bridge {
         let L_cable = Road.getXY(gl, us[1], L_road_curve, h1)[0]
                     - Road.getXY(gl, us[0], L_road_curve, h1)[0];
 
-        let cableShaderProgram = new PhongShaderProgram(gl, "../textures/metal_wire.jpg", lightDir, lightColor, 5.);
+        let cableShaderProgram = new NormalMapShaderProgram(gl,
+            "../textures/cable.jpg", "../textures/cable-normalmap.jpg",
+            lightDir, lightColor, 20., .75);
         //                                      +0.5 to get into the road.
         let cable1 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r, cableShaderProgram);
         cable1.translate(0, a*h1+0.5, W_road/2-cable_r);
@@ -115,8 +118,11 @@ export class Bridge {
         sys.addChild(cable2);
 
 
-        let suspenderShaderProgram = new PhongShaderProgram(gl, "../textures/uv-grid.png", lightDir, lightColor, 1.); // poner otra textura;
-        let circ = new Circle(0.05, 4 /*div*/);
+        let suspenderShaderProgram = new NormalMapShaderProgram(gl, 
+            "../textures/metal_wire.jpg", "textures/metal_wire-normalmap.jpg",
+            lightDir, lightColor, 5.); // poner otra textura;
+
+        let circ = new Circle(0.05, 8 /*div*/);
         let startCable = Road.getXY(gl, us[0], L_road_curve, h1)[0];
         let endCable = Road.getXY(gl, us[1], L_road_curve, h1)[0];
         for(let x0 = startCable; x0 < endCable; x0+=s1){
@@ -124,14 +130,16 @@ export class Bridge {
             let do_y = Road.getY(gl, x0, L_road_curve, h1);
 
             let line = new Line(gl, [x0, do_y-(a*h1+0.5), 0], [x0, up_y, 0]);
-            let vsuspender = new SweepCurve(gl, circ, line, 1, false, 1, do_y-(a*h1+0.5)-up_y);
+            let vsuspender = new SweepCurve(gl, circ, line, 1, false, 1, 3*(do_y-(a*h1+0.5)-up_y));
 
             vsuspender.attach(suspenderShaderProgram);
             cable1.addChild(vsuspender);
             cable2.addChild(vsuspender);
         }
 
-        let towerShaderProgram = new PhongShaderProgram(gl, "../textures/uv-grid.png", lightDir, lightColor, 10.); // poner otra textura;
+        let towerShaderProgram = new NormalMapShaderProgram(gl,
+            "../textures/oxido.jpg", "../textures/oxido-normalmap.jpg",
+            lightDir, lightColor, 10., .2); // poner otra textura;
 
         let tower1 = new Tower(gl, r, h2, towerShaderProgram);
         tower1.translate(-2*L_cable/10, -h0, W_road/2-cable_r);
@@ -278,12 +286,16 @@ class Road {
         this.path = new Path(gl, [path1, path2, path3]);
         this.path.setBinor(0,1,0);
 
-        let road = new SweepCurve(gl, this.profile, this.path, 0.1, true, 1, 10);
-        road.attach(new PhongShaderProgram(gl, "../textures/uv-grid.png", lightDir, lightColor, 10., 0.9));
+        let road = new SweepCurve(gl, this.profile, this.path, 0.1, false, 2, 10);
+        road.attach(new NormalMapShaderProgram(gl,
+            "../textures/concrete.jpg", "../textures/concrete-normalmap.jpg",
+            lightDir, lightColor, 10., 0.5));
 
         let roadAsphaltProfile = new Polygon(profile3.discretization(1));
         let roadAsphalt = new SweepCurve(gl, roadAsphaltProfile, this.path, 0.1, true, 1, 10);
-        roadAsphalt.attach(new PhongShaderProgram(gl, "../textures/tramo-doblemarilla.jpg", lightDir, lightColor, 10., 0.25));
+        roadAsphalt.attach(new NormalMapShaderProgram(gl,
+            "../textures/carretera.jpg", "../textures/carretera-normalmap.jpg", 
+            lightDir, lightColor, 20., .2));
         roadAsphalt.translate(0, 0.005, 0);
         road.addChild(roadAsphalt);
 
@@ -354,7 +366,7 @@ class Tower {
         profile_array = profile_array.concat(line3.discretization(1));
         let profile = new Polygon(profile_array);
 
-        let t = Revolution.fromPolygon(gl, 10, profile, true, 5, 1);
+        let t = Revolution.fromPolygon(gl, 10, profile, true, 4, 1);
         t.attach(shaderProgram);
         return t;
     }
@@ -369,9 +381,9 @@ class Cable {
         let curve = new Path(gl, [curve1, curve2, curve3]);
 
         let circ = new Circumference(r);
-        let circ_profile = new Polygon(circ.discretization(0.25));
+        let circ_profile = new Polygon(circ.discretization(0.1));
 
-        let c = new SweepCurve(gl, circ_profile, curve, 0.01, true, 1, 20);
+        let c = new SweepCurve(gl, circ_profile, curve, 0.01, true, 1, 25);
         c.attach(shaderProgram);
         return c;
     }

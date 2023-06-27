@@ -19,6 +19,8 @@ export class Object3D {
 
         this.positionBuffer = [];
         this.normalBuffer = [];
+        this.tangentBuffer = [];
+        this.binormalBuffer = [];
         this.uvBuffer = [];
 
         this.modelMatrix = mat4.identity(mat4.create());
@@ -42,7 +44,17 @@ export class Object3D {
     getNormal(u, v) {
         return(0, 0, 0)
     }
-    
+
+    /// Override
+    getTangent(u, v){
+        return(0, 0, 0)
+    }
+
+    /// Override
+    getBinormal(u, v){
+        return(0, 0, 0)
+    }
+
     /// Override
     getTextureCordenates(u, v) {
         return(0, 0)
@@ -80,6 +92,16 @@ export class Object3D {
                 this.normalBuffer.push(nrm[1]);
                 this.normalBuffer.push(nrm[2]);
 
+                var tng=this.getTangent(u,v);
+                this.tangentBuffer.push(tng[0]);
+                this.tangentBuffer.push(tng[1]);
+                this.tangentBuffer.push(tng[2]);
+
+                var bin=this.getBinormal(u,v);
+                this.binormalBuffer.push(bin[0]);
+                this.binormalBuffer.push(bin[1]);
+                this.binormalBuffer.push(bin[2]);
+
                 var uvs=this.getTextureCordenates(u,v);
 
                 this.uvBuffer.push(uvs[0]*this.u_scale);
@@ -116,6 +138,18 @@ export class Object3D {
         this.webgl_normal_buffer.itemSize = 3;
         this.webgl_normal_buffer.numItems = this.normalBuffer.length / 3;
 
+        this.webgl_tangent_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_tangent_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.tangentBuffer), gl.STATIC_DRAW);
+        this.webgl_tangent_buffer.itemSize = 3;
+        this.webgl_tangent_buffer.numItems = this.tangentBuffer.length / 3;
+
+        this.webgl_binormal_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_binormal_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.binormalBuffer), gl.STATIC_DRAW);
+        this.webgl_binormal_buffer.itemSize = 3;
+        this.webgl_binormal_buffer.numItems = this.binormalBuffer.length / 3;
+
         this.webgl_uvs_buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.webgl_uvs_buffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.uvBuffer), gl.STATIC_DRAW);
@@ -141,10 +175,12 @@ export class Object3D {
 
         this.shaderProgram.setUpMatrixs(viewMatrix, projMatrix, m);
 
-        this.shaderProgram.setUpBuffers(this.webgl_position_buffer,
+        this.shaderProgram.setUpBuffers(
+            this.webgl_position_buffer,
             this.webgl_uvs_buffer,
             this.webgl_normal_buffer,
-            this.webgl_index_buffer);
+            this.webgl_tangent_buffer,
+            this.webgl_binormal_buffer);
 
         this.shaderProgram.draw(this.webgl_index_buffer, eyePos);
 
@@ -167,9 +203,9 @@ export class Object3D {
             let line = vec3.create()
             
             let normal_i = vec3.fromValues(
-                this.normalBuffer[i]/5,
-                this.normalBuffer[i+1]/5,
-                this.normalBuffer[i+2]/5);
+                this.tangentBuffer[i]/5,
+                this.tangentBuffer[i+1]/5,
+                this.tangentBuffer[i+2]/5);
             let position_i = vec3.fromValues(
                 this.positionBuffer[i],
                 this.positionBuffer[i+1],

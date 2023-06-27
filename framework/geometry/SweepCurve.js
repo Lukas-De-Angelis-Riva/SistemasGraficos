@@ -132,6 +132,53 @@ export class SweepCurve extends Object3D {
         return [xn, yn, zn];
     }
 
+    getTangent(u, v){
+        const closed = this.closed;
+        if(closed)
+            v = this.rows/(this.rows-4)*v-2/(this.rows-4);
+
+        v = fix(v);
+        var level;
+        if (closed && (approx_equals(v, -2/(this.rows-4)) || approx_equals(v, -1/(this.rows-4)))) {            // v° == 0 || v° == 1
+            level = this.path.evaluate(0);
+        } else if (closed && (approx_equals(v, 1+1/(this.rows-4)) || approx_equals(v, 1+2/(this.rows-4)))) {   // v° == c-1
+            level = this.path.evaluate(this.path.length());
+        } else {
+            level = this.path.evaluate(v*this.path.length());
+        }
+
+        let vertex_n = Math.round(u*(this.profile.vs.length-1));
+        let p = this.profile.vs[vertex_n];
+        let tangent = vec4.fromValues(-p.ny, p.nx, 0, 1);
+
+        let levelMatrix = mat4.fromValues(
+            level.nx, level.bx, level.tx, level.x,
+            level.ny, level.by, level.ty, level.y,
+            level.nz, level.bz, level.tz, level.z,
+            0       , 0       , 0       , 1
+        );
+
+        let normalMatrix = mat4.create();
+        mat4.invert(normalMatrix, levelMatrix);
+        mat4.transpose(normalMatrix, normalMatrix);
+
+        let xt = normalMatrix[0] * tangent[0] + normalMatrix[1] * tangent[1] + normalMatrix[2] * tangent[2] + normalMatrix[3] * tangent[3];
+        let yt = normalMatrix[4] * tangent[0] + normalMatrix[5] * tangent[1] + normalMatrix[5] * tangent[2] + normalMatrix[7] * tangent[3];
+        let zt = normalMatrix[8] * tangent[0] + normalMatrix[9] * tangent[1] + normalMatrix[10] * tangent[2] + normalMatrix[11] * tangent[3];
+        return [xt, yt, zt];
+    }
+
+    getBinormal(u, v){
+        let tangent = this.getTangent(u, v);
+        let normal = this.getNormal(u, v);
+
+        let binormal = vec3.create();
+        vec3.cross(binormal, tangent, normal);
+        vec3.normalize(binormal, binormal);
+        return [binormal[0], binormal[1], binormal[2]];
+    }
+
+
     cumulative_perimeter(){
         if(this.profile.cumulative_perimeter){
             return this.profile.cumulative_perimeter;

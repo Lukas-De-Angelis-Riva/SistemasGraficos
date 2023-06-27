@@ -12,6 +12,8 @@ precision highp float;
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
+attribute vec3 aVertexTangent;
+attribute vec3 aVertexBinormal;
 attribute vec2 aVertexUv;
 
 uniform mat4 modelMatrix;
@@ -19,25 +21,34 @@ uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 uniform mat4 normalMatrix;
 
-varying vec3 vNormal;
 varying vec3 vPosWorld;
+varying vec3 vNormal;
+varying vec3 vTangent;
+varying vec3 vBinormal;
 varying highp vec2 vUv;
 
 void main(void) {
     gl_Position = projMatrix * viewMatrix * modelMatrix * vec4(aVertexPosition, 1.0);
 
     vPosWorld=(modelMatrix*vec4(aVertexPosition,1.0)).xyz;    //la posicion en coordenadas de mundo
-    vNormal=(normalMatrix*vec4(aVertexNormal,1.0)).xyz;       //la normal en coordenadas de mundo
+    vNormal=(normalMatrix*vec4(aVertexNormal, 1.0)).xyz;       //la normal ""
+    vTangent=(normalMatrix*vec4(aVertexTangent, 1.0)).xyz;    //la tangen ""
+    vBinormal=(normalMatrix*vec4(aVertexBinormal, 1.0)).xyz;  //la binorm ""
 
     vUv = aVertexUv;
 }
 `
 var fragment_shader = `
 precision highp float;
-varying vec3 vNormal;
+
 varying vec3 vPosWorld;
+varying vec3 vNormal;
+varying vec3 vTangent;
+varying vec3 vBinormal;
+varying highp vec2 vUv;
 
 uniform sampler2D textureSampler;
+uniform sampler2D normalMapSampler;
 
 // Assuming directional light.
 uniform vec3 lightDir;
@@ -48,22 +59,22 @@ uniform vec3 eyePos;
 uniform float alpha;
 uniform float specIntensity;
 
-varying highp vec2 vUv;
-
 void main(void) {
     vec3 backColor = texture2D(textureSampler, vUv).xyz;
+    vec3 localNormal = 2.0 * texture2D(normalMapSampler, vUv).rgb - 1.0;
+    vec3 normal = normalize(mat3(vTangent, vBinormal, vNormal) * localNormal);
 
     // Ambient
     vec3 ambient = backColor * vec3(0.3, 0.3, 0.3);
 
     // Diffuse
     vec3 l = -lightDir;
-    vec3 n = vNormal;
+    vec3 n = normal;
     vec3 diffuse = backColor * max(dot(n, l), 0.0) * lightColor;
 
     // Specular
     vec3 v = normalize(eyePos - vPosWorld);
-    vec3 r = reflect(lightDir, vNormal);
+    vec3 r = reflect(lightDir, normal);
     vec3 specular = vec3(specIntensity, specIntensity, specIntensity) * pow(max(dot(r,v), 0.0), alpha) * lightColor;
 
     vec3 color = ambient + diffuse + specular;
@@ -71,8 +82,8 @@ void main(void) {
 }
 `
 
-export class PhongShaderProgram {
-    constructor(gl, src, lightDir, lightColor, alpha, specIntensity=1){
+export class NormalMapShaderProgram {
+    constructor(gl, srcTexture, srcNormalMap, lightDir, lightColor, alpha, specIntensity=1){
         this.gl = gl;
         this.lightDir = lightDir;
         this.lightColor = lightColor;
@@ -80,7 +91,10 @@ export class PhongShaderProgram {
         this.specIntensity = specIntensity;
 
         this.texture = null;
-        this.initTexture(src);
+        this.initTexture(srcTexture);
+
+        this.normalMap = null;
+        this.initNormalMap(srcNormalMap);
 
         let vertex = this.initShader(vertex_shader, gl.VERTEX_SHADER);
         let fragment = this.initShader(fragment_shader, gl.FRAGMENT_SHADER);
@@ -95,6 +109,7 @@ export class PhongShaderProgram {
 
         this.texture.image = new Image();
         this.texture.image.onload = () => {
+            console.log("Cargando imagen");
             // No se muy bien para que.
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); 
 
@@ -107,8 +122,34 @@ export class PhongShaderProgram {
 
             // Dejamos de hablar de this.texture
             gl.bindTexture(gl.TEXTURE_2D, null);
+            console.log("Cargada imagen");
         }
         this.texture.image.src = src;
+    }
+
+    initNormalMap(src){
+        const gl = this.gl;
+
+        this.normalMap = gl.createTexture();
+
+        this.normalMap.image = new Image();
+        this.normalMap.image.onload = () => {
+            console.log("Cargando imagen de normales");
+            // No se muy bien para que.
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); 
+
+            // Empezamos a hablar con this.texture
+            gl.bindTexture(gl.TEXTURE_2D, this.normalMap);
+
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.normalMap.image);
+
+            gl.generateMipmap(gl.TEXTURE_2D);
+
+            // Dejamos de hablar de this.texture
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            console.log("Cargada imagen de normales");
+        }
+        this.normalMap.image.src = src;
     }
 
     initShaderProgram(vertex, fragment){
@@ -136,6 +177,16 @@ export class PhongShaderProgram {
         gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
         gl.vertexAttribPointer(this.vertexNormalAttribute, 3, gl.FLOAT, false, 0, 0);
 
+        this.vertexTangentAttribute = gl.getAttribLocation(shaderProgram, "aVertexTangent");
+        gl.enableVertexAttribArray(this.vertexTangentAttribute);
+        gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
+        gl.vertexAttribPointer(this.vertexTangentAttribute, 3, gl.FLOAT, false, 0, 0);
+
+        this.vertexBinormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexBinormal");
+        gl.enableVertexAttribArray(this.vertexBinormalAttribute);
+        gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
+        gl.vertexAttribPointer(this.vertexBinormalAttribute, 3, gl.FLOAT, false, 0, 0);
+
         this.vertexUv = gl.getAttribLocation(shaderProgram, "aVertexUv");
         gl.enableVertexAttribArray(this.vertexUv);
         gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
@@ -149,10 +200,15 @@ export class PhongShaderProgram {
 
         // Textures
         this.textureSamplerUniform = gl.getUniformLocation(shaderProgram, "textureSampler");
+        this.normalMapSamplerUniform = gl.getUniformLocation(shaderProgram, "normalMapSampler");
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.uniform1i(this.textureSamplerUniforme, 0);
+        gl.uniform1i(this.textureSamplerUniform, 0);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.normalMap);
+        gl.uniform1i(this.normalMapSamplerUniform, 1);
 
         // Phong
         this.aLightColor = gl.getUniformLocation(shaderProgram, "lightColor");
@@ -202,6 +258,12 @@ export class PhongShaderProgram {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
         gl.vertexAttribPointer(this.vertexNormalAttribute, normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, tangentBuffer);
+        gl.vertexAttribPointer(this.vertexTangentAttribute, tangentBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, binormalBuffer);
+        gl.vertexAttribPointer(this.vertexBinormalAttribute, binormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
     }
 
     setUpPositionBuffer(positionBuffer){
@@ -222,7 +284,11 @@ export class PhongShaderProgram {
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.uniform1i(this.textureSamplerUniforme, 0);
+//        gl.uniform1i(this.textureSamplerUniform, 0);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.normalMap);
+//        gl.uniform1i(this.normalMapSamplerUniform, 1);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
         gl.drawElements(gl.TRIANGLE_STRIP, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);

@@ -1,4 +1,5 @@
 import { Object3D } from "./Object3D.js";
+var vec3=glMatrix.vec3;
 
 const DELTA = 1e-3;
 
@@ -86,7 +87,32 @@ export class Cuboid extends Object3D {
             return this.border_n(u, v)
         }
     }
-    
+
+    getTangent(u, v){
+        u = Math.round(u*7);
+        v = Math.round(v*5);
+
+        if(u == 0 || u == 1){
+            return [-1, 0, 0];
+        } else if (u == 2 || u == 3){
+            return [0, 0, -1];
+        } else if (u == 4 || u == 5){
+            return [1, 0, 0];
+        } else if (u == 6 || u == 7){
+            return [0, 0, 1];
+        }
+    }
+
+    getBinormal(u, v){
+        let tangent = this.getTangent(u, v);
+        let normal = this.getNormal(u, v);
+
+        let binormal = vec3.create();
+        vec3.cross(binormal, tangent, normal);
+        vec3.normalize(binormal, binormal);
+        return [binormal[0], binormal[1], binormal[2]];
+    }
+
     uv_upper_border_cover(iu){
         if (iu == 0 || iu == 7) {
             return [0.5 - DELTA, 1/3 - DELTA];

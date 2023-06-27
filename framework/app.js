@@ -1,7 +1,14 @@
 import { DronCamera, FollowerCamera, OrbitalCamera } from './Camera.js';
+import { SweepCurve } from './geometry/SweepCurve.js';
 import { Bridge, Ship, Terrain, TreeGenerator } from './geometry/World.js';
+import { Circumference } from './geometry/curves/Circumference.js';
+import { Line } from './geometry/curves/Line.js';
+import { Circle } from './geometry/polygons/Circle.js';
+import { Polygon } from './geometry/polygons/Polygon.js';
 import { Cuboid } from './geometry/standard/Cuboid.js';
 import { Plane } from  './geometry/standard/Plane.js';
+import { Sphere } from './geometry/standard/Sphere.js';
+import { NormalMapShaderProgram } from './shaders/NormalMapShaderProgram.js';
 import { PhongShaderProgram } from './shaders/PhongShaderProgram.js';
 import { SkyBoxShaderProgram } from './shaders/SkyBoxShaderProgram.js';
 import { TexturedShaderProgram } from './shaders/TexturedShaderProgram.js';
@@ -139,13 +146,13 @@ function crearGeometria(){
 function dibujarGeometria(viewMatrix, projMatrix){
     let eyePos = camera.eyePos();
     let showNormals = app.show_normals != "No";
-    
+
     cuboid.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     trees.forEach(t => {
         t.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     });
-    water.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
-    terrain.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+//    water.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+//    terrain.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     bridge.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     ship.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
 }

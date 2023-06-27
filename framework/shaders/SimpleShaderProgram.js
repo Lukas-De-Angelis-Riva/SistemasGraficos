@@ -1,5 +1,12 @@
 var mat4=glMatrix.mat4;
 
+function emptyBuffer(gl){
+    let buff = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buff);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([]), gl.STATIC_DRAW);
+    return buff;
+}
+
 var vertex_shader = `
 precision highp float;
 
@@ -50,7 +57,9 @@ export class SimpleShaderProgram {
         // Buffers
         this.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
         gl.enableVertexAttribArray(this.vertexPositionAttribute);
- 
+        gl.bindBuffer(gl.ARRAY_BUFFER, emptyBuffer(gl));
+        gl.vertexAttribPointer(this.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+
         // Matrixs
         this.modelMatrixUniform = gl.getUniformLocation(shaderProgram, "modelMatrix");
         this.viewMatrixUniform = gl.getUniformLocation(shaderProgram, "viewMatrix");
@@ -87,13 +96,11 @@ export class SimpleShaderProgram {
         gl.uniformMatrix4fv(this.viewMatrixUniform, false, viewMatrix);
     }
 
-    setUpBuffers(positionBuffer, uvsBuffer, normalBuffer, indexBuffer){
+    setUpBuffers(positionBuffer, uvsBuffer, normalBuffer, tangentBuffer, binormalBuffer){
         const gl = this.gl;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         gl.vertexAttribPointer(this.vertexPositionAttribute, positionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     }
 
     setUpPositionBuffer(positionBuffer){
@@ -107,6 +114,7 @@ export class SimpleShaderProgram {
     draw(indexBuffer, eyePos){
         const gl = this.gl;
 
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
         gl.drawElements(gl.TRIANGLE_STRIP, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
 

@@ -12,6 +12,7 @@ import { NormalMapShaderProgram } from './shaders/NormalMapShaderProgram.js';
 import { PhongShaderProgram } from './shaders/PhongShaderProgram.js';
 import { SkyBoxShaderProgram } from './shaders/SkyBoxShaderProgram.js';
 import { TexturedShaderProgram } from './shaders/TexturedShaderProgram.js';
+import { WaterShaderProgram } from './shaders/WaterShaderProgram.js';
 var time=0;
 
 export var gl;
@@ -114,21 +115,26 @@ var ship;
 var trees;
 
 var cuboid;
-
 function crearGeometria(){
-    let lightDir = [-0.294375, -0.718125, 0.630625];
+    185.64878845214844, 215.0000457763672, -94.06645202636719
+    let lightDir = [-0.617, -0.717, 0.311];
     let lightColor = [1,1,1];
+    let background = "textures/sky-cubemap"; 
 
-    cuboid = new Cuboid(gl, 400, 400, 400);
-    cuboid.attach(new SkyBoxShaderProgram(gl, "textures/square-sky-box.png"));
+    cuboid = new Sphere(gl, 300);
+    cuboid.attach(new SkyBoxShaderProgram(gl, background));
 
     let leavesShaderProgram = new PhongShaderProgram(gl, "textures/hojas.jpg", lightDir, lightColor, 1., 0.);
     let trunkShaderProgram = new PhongShaderProgram(gl, "textures/tronco.jpg", lightDir, lightColor, 1., 0.);
     trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4, leavesShaderProgram, trunkShaderProgram);
 
     let H = 3*(app.H_river-1);
+//    water = new Plane(gl, 100, 100, 1, 1, 1, 1);
     water = new Plane(gl, app.L_terrain, app.L_river+2, 1, 1, 1, app.L_terrain/(app.L_river+2));
-    water.attach(new PhongShaderProgram(gl, "textures/aguaDeMar.jpg", lightDir, lightColor, 100.0));
+    water.attach(new WaterShaderProgram(gl,
+        background, "textures/agua-normalmap.png",
+        1.0
+    ));
     water.translate(0, H, 0);
     water.setColor([.33, .70, .93]);
 
@@ -146,13 +152,13 @@ function crearGeometria(){
 function dibujarGeometria(viewMatrix, projMatrix){
     let eyePos = camera.eyePos();
     let showNormals = app.show_normals != "No";
-
+//    sph.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     cuboid.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     trees.forEach(t => {
         t.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     });
-//    water.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
-//    terrain.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+    water.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+    terrain.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     bridge.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     ship.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
 }
@@ -230,6 +236,7 @@ document.addEventListener('keydown', function(event) {
     if(event.key == '2') camera = dronCamera;
     if(event.key == '3') camera = followerCamera;
 
+    if(event.key == 'x' || event.key == 'X') console.log(camera.eyePos());
     if(event.key == 'a' || event.key == 'A') movement.left = true;
     if(event.key == 's' || event.key == 'S') movement.back = true;
     if(event.key == 'd' || event.key == 'D') movement.right = true;

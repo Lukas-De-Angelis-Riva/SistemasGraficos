@@ -17,7 +17,15 @@ export class Plane extends Object3D {
     getNormal(u, v) {
         return [0,1,0];
     }
-    
+
+    getTangent(u, v){
+        return [1,0,0];
+    }
+
+    getBinormal(u, v){
+        return [0,0,1];
+    }
+
     getTextureCordenates(u, v) {
         return [u,v];
     }

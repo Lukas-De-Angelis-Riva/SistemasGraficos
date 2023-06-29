@@ -45,7 +45,7 @@ export class FollowerCamera {
 
 export class DronCamera {
     static MAX_UP_ANGLE = 7 * Math.PI / 16;
-    static DELTA_MOVEMENT = 0.1;
+    static DELTA_MOVEMENT = .1;
     static RAD_VEL = 2 * Math.PI * 0.005;
 
     constructor(gl, xStart = 0, yStart = 0, zStart = 0) {
@@ -91,7 +91,7 @@ export class DronCamera {
     }
 
     moveForward(intensity){
-        vec3.scaleAndAdd(this.position, this.position, this.front_v, intensity*DronCamera.DELTA_MOVEMENT);
+        vec3.scaleAndAdd(this.position, this.position, this.front_v, intensity * DronCamera.DELTA_MOVEMENT);
     }
 
     moveSide(intensity){

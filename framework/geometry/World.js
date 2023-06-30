@@ -1,11 +1,9 @@
-import { gl } from "../app.js";
 import { SweepCurve } from "./SweepCurve.js";
 import { Sphere } from "./standard/Sphere.js";
 import { System } from "./standard/System.js";
 import { CubicBezier } from "./curves/CubicBezier.js";
 import { Line } from "./curves/Line.js";
 import { QuadraticBezier } from "./curves/QuadraticBezier.js";
-import { MovingSweepCurve } from "./MovingSweepCurve.js"
 import { Circle } from "./polygons/Circle.js";
 import { Path } from "./curves/Path.js";
 import { Polygon } from "./polygons/Polygon.js";
@@ -15,9 +13,10 @@ import { Circumference } from "./curves/Circumference.js";
 import { QuadraticBSpline } from "./curves/QuadraticBSpline.js";
 import { Cuboid } from "./standard/Cuboid.js";
 
-import { TexturedShaderProgram } from '../shaders/TexturedShaderProgram.js';
-import { PhongShaderProgram } from "../shaders/PhongShaderProgram.js";
 import { NormalMapShaderProgram } from "../shaders/NormalMapShaderProgram.js";
+import { FixedExtrudeCurve } from "./FixedSweepCurve.js";
+import { Vertex } from "./polygons/Vertex.js";
+import { TerrainShaderProgram } from "../shaders/TerrainShaderProgram.js";
 
 
 let grey =   [.80, .80, .80];
@@ -165,44 +164,9 @@ export class Bridge {
     }
 }
 
-class TerrainCurve extends QuadraticBSpline {
-    constructor(gl, controlPoints){
-        super(gl, controlPoints);
-        this.backup = controlPoints.slice();
-        this.i = 0;
-        this.lap = true;
-    }
-
-    move(p, a, b, c){
-        return [p[0]+a, p[1]+b, p[2]+c];
-    }
-
-    evaluate(u){
-        if(this.lap && u < 1e-6){ // is 0
-            this.i++;
-            this.controlPoints = this.backup.slice();
-            let a = 2*Math.sin(0.1*this.i+1234);
-            let b = 1.5*Math.sin(0.2*this.i+2341)-1;
-            let c = 1.7*Math.sin(-0.25*this.i-3412)-1;
-            this.controlPoints[3] = this.move(this.controlPoints[3], a, 0, 0);
-            this.controlPoints[4] = this.move(this.controlPoints[4], a, c, 0);
-            this.controlPoints[5] = this.move(this.controlPoints[5], a, 0, 0);
-            this.controlPoints[6] = this.move(this.controlPoints[6], a, b, 0);
-            this.controlPoints[7] = this.move(this.controlPoints[7], a, 0, 0);
-
-            this.lap = false;
-        } else if (u > 1e-6){
-            this.lap = true;
-        }
-
-        return super.evaluate(u);
-    }
-}
-
 export class Terrain {
-    constructor(gl, L=30, L_inner=15, H=3){
+    constructor(gl, lightDir, lightColor, L=30, L_inner=15, H=3){
         let p0 = [-L, 0, 0];
-        let p0_ = [-L+1e-6, 0, 0];
         let p1 = [-L_inner, 0, 0];
         let p2 = [-L_inner/2, 0, 0];
         let p3 = [-L_inner/4, -H, 0];
@@ -210,22 +174,20 @@ export class Terrain {
         let p5 = [L_inner/4, -H, 0];
         let p6 = [L_inner/2, 0, 0];
         let p7 = [L_inner, 0, 0];
-        let p8_ = [L-1e-6, 0, 0];
         let p8 = [L, 0, 0];
 
-        let controlPoints = [p0, p0_, p1, p2, p3, p4, p5, p6, p7, p8_, p8];
-        let terrain_curve = new TerrainCurve(gl, controlPoints);
-        /*
-        let right = new Line(gl, [L, 0, 0], [L, -3*H, 0]);
-        let bottom = new Line(gl, [L, -3*H, 0], [-L, -3*H, 0]);
-        let left = new Line(gl, [-L, -3*H, 0], [-L, 0, 0]);
-        let terrain_path = new Path(gl, [terrain_curve, right, bottom, left]);
-        */
-        let line = new Line(gl, [0, 0, -L], [0, 0, L]);
-        line.setBinor(0, 1, 0);
+        let middleTerrainCurve = new QuadraticBSpline(gl, [p1, p2, p3, p4, p5, p6, p7]);
+        let middleTerrainProfile = middleTerrainCurve.discretization(0.05);
+        middleTerrainProfile.unshift(new Vertex(-L, 0, 0, 0, 1, 0));
+        middleTerrainProfile.push(new Vertex(L, 0, 0, 0, 1, 0));
 
-        let t = new MovingSweepCurve(gl, terrain_curve, 0.05, line, 0.01, false);
-        t.attach(new TexturedShaderProgram(gl, "../textures/pasto1.jpg"));
+        let t = new FixedExtrudeCurve(gl, new Polygon(middleTerrainProfile), 0.05, L, 20, 20);
+        t.attach(new TerrainShaderProgram(gl,
+            "../textures/pasto.jpg",
+            "../textures/rocas.jpg",
+            "../textures/arena.jpg",
+            "../textures/rocas-normalmap.jpg",
+            lightDir, lightColor, 20.0, .1));
         return t;
     }
 }
@@ -485,10 +447,10 @@ class SphereTree {
         let circ = new Circle(h/4, 20 /*div*/);
         let trunk_path = new CubicBezier(gl, [[0,0,0], [0, 3*h/2, 0], [h/2, 3*h, 0], [h/2, 9*h/2, 0]]);
         trunk_path.setBinor(0, 0, 1);
-        let trunk = new SweepCurve(gl, circ, trunk_path, 0.20, true);
+        let trunk = new SweepCurve(gl, circ, trunk_path, 0.20, true, h, 2*Math.PI*r);
         trunk.attach(trunkShaderProgram);
 
-        let crown = new Sphere(gl, 2*r, 10, 10);
+        let crown = new Sphere(gl, 2*r, 10, 10, 10, 10);
         crown.attach(leavesShaderProgram);
         crown.translate(h/2, 9*h/2, 0);
 
@@ -506,7 +468,7 @@ class PineTree {
         let circ = new Circle(r, 20 /*div*/);
         let trunk_path = new Line(gl, [0, 0, 0], [0, H-2*h, 0]);
         trunk_path.setBinor(0, 0, 1);
-        let trunk = new SweepCurve(gl, circ, trunk_path, 1, true);
+        let trunk = new SweepCurve(gl, circ, trunk_path, 1, true, h, 2*Math.PI*r);
         trunk.attach(trunkShaderProgram);
 
         let mPh = function(p){
@@ -522,7 +484,7 @@ class PineTree {
 
         let crown_curve = new Path(gl, [curve1, curve2, curve3]);
         crown_curve.setBinor(0, 0, -1);
-        let crown = Revolution.fromCurve(gl, 20, crown_curve, 0.20, false);
+        let crown = Revolution.fromCurve(gl, 20, crown_curve, 0.20, false, 5, 5);
         crown.attach(leavesShaderProgram);
         crown.rotateX(Math.PI/2);
 
@@ -539,7 +501,7 @@ class LargeTree {
         let circ = new Circle(r, 20 /*div*/);
         let trunk_path = new Line(gl, [0, 0,0], [0, h, 0]);
         trunk_path.setBinor(0, 0, 1);
-        let trunk = new SweepCurve(gl, circ, trunk_path, 1, true);
+        let trunk = new SweepCurve(gl, circ, trunk_path, 1, true, 2*Math.PI*r, h);
         trunk.attach(trunkShaderProgram);
 
         let p0 = [r, h, 0]; let p1 = [3*r/2, 1.2*h, 0]; let p1_ = [3*r/2+1e-6, 1.2*h, 0];
@@ -550,7 +512,7 @@ class LargeTree {
         let curve2 = new CubicBezier(gl, [p2, p3, p4, p5]);
         let curve = new Path(gl, [curve1, curve2]);
 
-        let crown = Revolution.fromCurve(gl, 20, curve, 0.20, false);
+        let crown = Revolution.fromCurve(gl, 20, curve, 0.20, false, 5, 5);
         crown.attach(leavesShaderProgram);
         crown.rotateX(Math.PI/2);
 

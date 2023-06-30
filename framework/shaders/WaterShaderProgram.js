@@ -65,7 +65,7 @@ void main(void) {
     vec3 Rinv = vec3(R.x, -R.y, R.z);
 
     vec3 color = textureCube(reflectMapSampler, Rinv).rgb;
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, alpha);
 }
 `
 

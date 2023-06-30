@@ -54,8 +54,6 @@ export class SweepCurve extends Object3D {
         this.path = path;
         this.cumulative_distance = this.path.cumulative_distance(step);
         this.step = step;
-        this.scale_u = 1;
-        this.scale_v = 1;
         this.initBuffers();
     }
 
@@ -218,7 +216,7 @@ export class SweepCurve extends Object3D {
         const v_no = Math.round(v * 1/this.step * this.path.length())
         return this.cumulative_distance[v_no] / total_length;
     }
-    
+
     getCoverTextureCordenates(u, v){
         const closed = this.closed;
         let b = border(this.profile.vs);

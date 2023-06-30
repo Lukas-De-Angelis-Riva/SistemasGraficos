@@ -203,9 +203,9 @@ export class Object3D {
             let line = vec3.create()
             
             let normal_i = vec3.fromValues(
-                this.tangentBuffer[i]/5,
-                this.tangentBuffer[i+1]/5,
-                this.tangentBuffer[i+2]/5);
+                this.normalBuffer[i]/5,
+                this.normalBuffer[i+1]/5,
+                this.normalBuffer[i+2]/5);
             let position_i = vec3.fromValues(
                 this.positionBuffer[i],
                 this.positionBuffer[i+1],

@@ -114,31 +114,29 @@ var bridge;
 var ship;
 var trees;
 
-var cuboid;
+var skybox;
 function crearGeometria(){
-    185.64878845214844, 215.0000457763672, -94.06645202636719
     let lightDir = [-0.617, -0.717, 0.311];
     let lightColor = [1,1,1];
     let background = "textures/sky-cubemap"; 
 
-    cuboid = new Sphere(gl, 300);
-    cuboid.attach(new SkyBoxShaderProgram(gl, background));
+    skybox = new Sphere(gl, 300);
+    skybox.attach(new SkyBoxShaderProgram(gl, background));
 
     let leavesShaderProgram = new PhongShaderProgram(gl, "textures/hojas.jpg", lightDir, lightColor, 1., 0.);
     let trunkShaderProgram = new PhongShaderProgram(gl, "textures/tronco.jpg", lightDir, lightColor, 1., 0.);
     trees = TreeGenerator.generate(gl, app.N_trees, app.L_terrain/2, 4, 3*app.L_river/4, leavesShaderProgram, trunkShaderProgram);
 
     let H = 3*(app.H_river-1);
-//    water = new Plane(gl, 100, 100, 1, 1, 1, 1);
     water = new Plane(gl, app.L_terrain, app.L_river+2, 1, 1, 1, app.L_terrain/(app.L_river+2));
     water.attach(new WaterShaderProgram(gl,
         background, "textures/agua-normalmap.png",
-        1.0
+        0.7
     ));
     water.translate(0, H, 0);
     water.setColor([.33, .70, .93]);
 
-    terrain = new Terrain(gl, app.L_terrain/2, app.L_river);
+    terrain = new Terrain(gl, lightDir, lightColor, app.L_terrain/2, app.L_river);
     terrain.translate(0, 0.25, 0);
 
     bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, (app.L_terrain/2-app.L_road_curve/2), app.L_road_curve, app.s1, lightDir, lightColor);
@@ -152,15 +150,19 @@ function crearGeometria(){
 function dibujarGeometria(viewMatrix, projMatrix){
     let eyePos = camera.eyePos();
     let showNormals = app.show_normals != "No";
-//    sph.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
-    cuboid.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+
+    // Opaque objects
+    skybox.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+
     trees.forEach(t => {
         t.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     });
-    water.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     terrain.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     bridge.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
     ship.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
+
+    // Transparent objects
+    water.render(viewMatrix, projMatrix, eyePos, parent, showNormals);
 }
 
 function initMenu(){
@@ -202,7 +204,9 @@ function webGLStart() {
     gl.clearColor(66.2, 0.2, 0.2, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
-
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    
     $(window).on("resize",onResize);
     initMenu();
     tick();

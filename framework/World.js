@@ -1,34 +1,30 @@
-import { SweepCurve } from "./SweepCurve.js";
-import { Sphere } from "./standard/Sphere.js";
-import { System } from "./standard/System.js";
-import { CubicBezier } from "./curves/CubicBezier.js";
-import { Line } from "./curves/Line.js";
-import { QuadraticBezier } from "./curves/QuadraticBezier.js";
-import { Circle } from "./polygons/Circle.js";
-import { Path } from "./curves/Path.js";
-import { Polygon } from "./polygons/Polygon.js";
-import { Revolution } from "./Revolution.js";
-import { Circumference } from "./curves/Circumference.js";
+import { SweepCurve } from "./geometry/SweepCurve.js";
+import { Sphere } from "./geometry/standard/Sphere.js";
+import { System } from "./geometry/standard/System.js";
+import { CubicBezier } from "./geometry/curves/CubicBezier.js";
+import { Line } from "./geometry/curves/Line.js";
+import { QuadraticBezier } from "./geometry/curves/QuadraticBezier.js";
+import { Circle } from "./geometry/polygons/Circle.js";
+import { Path } from "./geometry/curves/Path.js";
+import { Polygon } from "./geometry/polygons/Polygon.js";
+import { Revolution } from "./geometry/Revolution.js";
+import { Circumference } from "./geometry/curves/Circumference.js";
 
-import { QuadraticBSpline } from "./curves/QuadraticBSpline.js";
-import { Cuboid } from "./standard/Cuboid.js";
+import { QuadraticBSpline } from "./geometry/curves/QuadraticBSpline.js";
+import { Cuboid } from "./geometry/standard/Cuboid.js";
 
-import { NormalMapShaderProgram } from "../shaders/NormalMapShaderProgram.js";
-import { FixedExtrudeCurve } from "./FixedSweepCurve.js";
-import { Vertex } from "./polygons/Vertex.js";
-import { TerrainShaderProgram } from "../shaders/TerrainShaderProgram.js";
-import { ContainerShaderProgram } from "../shaders/ContainerShaderProgram.js";
-import { PhongShaderProgram } from "../shaders/PhongShaderProgram.js";
-import { TexturedShaderProgram } from "../shaders/TexturedShaderProgram.js";
-
+import { NormalMapShaderProgram } from "./shaders/NormalMapShaderProgram.js";
+import { FixedExtrudeCurve } from "./geometry/FixedSweepCurve.js";
+import { Vertex } from "./geometry/polygons/Vertex.js";
+import { TerrainShaderProgram } from "./shaders/TerrainShaderProgram.js";
+import { ContainerShaderProgram } from "./shaders/ContainerShaderProgram.js";
+import { PhongShaderProgram } from "./shaders/PhongShaderProgram.js";
 
 let grey =   [.80, .80, .80];
 let red =    [.75, 0.0, 0.0];
 let blue =   [0.0, 0.0, .75];
 let yellow = [.85, .95, .50];
 let green =  [.35, .70, .40];
-let seagreen = [46/255, 139/255, 87/255]; 
-let brown =  [165/255,42/255,42/255];
 
 export class Ship {
     static move(ship, L=30){
@@ -54,15 +50,15 @@ export class Ship {
         path.setBinor(0, 1, 0);
 
         let hull = new SweepCurve(gl, hull_profile, path, 1);
-        hull.attach(new PhongShaderProgram(gl, "../textures/yellowmetal.png", lightDir, lightColor, 10.0, 0.9));
+        hull.attach(new PhongShaderProgram(gl, "./textures/yellowmetal.png", lightDir, lightColor, 10.0, 0.9));
         hull.setColor(red);
 
         let hull_floor = new SweepCurve(gl, hull_floor_profile, path, 1, false, 1, L);
         hull_floor.translate(0, 0.001, 0);
-        hull_floor.attach(new NormalMapShaderProgram(gl, "../textures/rubber.png", "../textures/rubber-normalmap.png", lightDir, lightColor, 10.0, 0.5));
+        hull_floor.attach(new NormalMapShaderProgram(gl, "./textures/rubber.png", "./textures/rubber-normalmap.png", lightDir, lightColor, 10.0, 0.5));
         hull.addChild(hull_floor);
 
-        let containerShaderProgram = new ContainerShaderProgram(gl, "../textures/container.jpg", lightDir, lightColor, 100.0, 1.0);
+        let containerShaderProgram = new ContainerShaderProgram(gl, "./textures/container.jpg", lightDir, lightColor, 100.0, 1.0);
         let diff = 1e-2;
         let size = 0.25;
         for(let j = 0; j < 3; j++){
@@ -78,7 +74,7 @@ export class Ship {
             }
         }
 
-        let sp = new NormalMapShaderProgram(gl, "../textures/cabina.png", "../textures/cable-normalmap.jpg", lightDir, lightColor, 100.0, 0.6);
+        let sp = new NormalMapShaderProgram(gl, "./textures/cabina.png", "./textures/cable-normalmap.jpg", lightDir, lightColor, 100.0, 0.6);
 
         let cube1 = new Cuboid(gl, 5*size, 3*size, size, 0.5, 1);
         cube1.translate(0, 3*size/2+1e-4, L/10);
@@ -120,7 +116,7 @@ export class Bridge {
                     - Road.getXY(gl, us[0], L_road_curve, h1)[0];
 
         let cableShaderProgram = new NormalMapShaderProgram(gl,
-            "../textures/cable.jpg", "../textures/cable-normalmap.jpg",
+            "./textures/cable.jpg", "./textures/cable-normalmap.jpg",
             lightDir, lightColor, 20., .75);
         //                                      +0.5 to get into the road.
         let cable1 = new Cable(gl, L_cable, 0, h3+(1-a)*h1-1, cable_r, cableShaderProgram);
@@ -133,7 +129,7 @@ export class Bridge {
 
 
         let suspenderShaderProgram = new NormalMapShaderProgram(gl, 
-            "../textures/metal_wire.jpg", "textures/metal_wire-normalmap.jpg",
+            "./textures/metal_wire.jpg", "textures/metal_wire-normalmap.jpg",
             lightDir, lightColor, 5.); // poner otra textura;
 
         let circ = new Circle(0.05, 8 /*div*/);
@@ -152,7 +148,7 @@ export class Bridge {
         }
 
         let towerShaderProgram = new NormalMapShaderProgram(gl,
-            "../textures/oxido.jpg", "../textures/oxido-normalmap.jpg",
+            "./textures/oxido.jpg", "./textures/oxido-normalmap.jpg",
             lightDir, lightColor, 10., .2); // poner otra textura;
 
         let tower1 = new Tower(gl, r, h2, towerShaderProgram);
@@ -198,10 +194,10 @@ export class Terrain {
 
         let t = new FixedExtrudeCurve(gl, new Polygon(middleTerrainProfile), 0.05, L, 20, 20);
         t.attach(new TerrainShaderProgram(gl,
-            "../textures/pasto.jpg",
-            "../textures/rocas.jpg",
-            "../textures/arena.jpg",
-            "../textures/rocas-normalmap.jpg",
+            "./textures/pasto.jpg",
+            "./textures/rocas.jpg",
+            "./textures/arena.jpg",
+            "./textures/rocas-normalmap.jpg",
             lightDir, lightColor, 20.0, .1));
         return t;
     }
@@ -265,13 +261,13 @@ class Road {
 
         let road = new SweepCurve(gl, this.profile, this.path, 0.1, false, 2, 10);
         road.attach(new NormalMapShaderProgram(gl,
-            "../textures/concrete.jpg", "../textures/concrete-normalmap.jpg",
+            "./textures/concrete.jpg", "./textures/concrete-normalmap.jpg",
             lightDir, lightColor, 10., 0.5));
 
         let roadAsphaltProfile = new Polygon(profile3.discretization(1));
         let roadAsphalt = new SweepCurve(gl, roadAsphaltProfile, this.path, 0.1, true, 1, 10);
         roadAsphalt.attach(new NormalMapShaderProgram(gl,
-            "../textures/carretera.jpg", "../textures/carretera-normalmap.jpg", 
+            "./textures/carretera.jpg", "./textures/carretera-normalmap.jpg", 
             lightDir, lightColor, 20., .2));
         roadAsphalt.translate(0, 0.005, 0);
         road.addChild(roadAsphalt);

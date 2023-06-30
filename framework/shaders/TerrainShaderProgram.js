@@ -239,7 +239,7 @@ export class TerrainShaderProgram {
 
         texture.image = new Image();
         texture.image.onload = () => {
-            console.log("Cargando imagen");
+            console.log("Uploading: ", src);
             // No se muy bien para que.
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); 
 
@@ -250,7 +250,7 @@ export class TerrainShaderProgram {
             gl.generateMipmap(gl.TEXTURE_2D);
 
             gl.bindTexture(gl.TEXTURE_2D, null);
-            console.log("Cargada imagen");
+            console.log("Successfully upload: ", src);
         }
         texture.image.src = src;
         return texture;

@@ -96,6 +96,7 @@ export class ContainerShaderProgram extends PhongShaderProgram {
 
         this.texture.image = new Image();
         this.texture.image.onload = () => {
+            console.log("Uploading: ", src);
             // No se muy bien para que.
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); 
 
@@ -111,6 +112,7 @@ export class ContainerShaderProgram extends PhongShaderProgram {
       
             // Dejamos de hablar de this.texture
             gl.bindTexture(gl.TEXTURE_2D, null);
+            console.log("Successfully upload: ", src);
         }
         this.texture.image.src = src;
     }

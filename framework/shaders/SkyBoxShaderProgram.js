@@ -96,14 +96,15 @@ export class SkyBoxShaderProgram {
 
             const image = new Image();
             image.onload = () => {
+                console.log("Uploading: ", url);    
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
                 // Now that the image has loaded upload it to the texture.
                 gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.texture);
                 gl.texImage2D(target, level, internalFormat, format, type, image);
                 gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
                 gl.bindTexture(gl.TEXTURE_2D, null);
-                console.log("Cargada la textura [\"", url, "\"]")
-            }
+                console.log("Successfully upload: ", url);
+                }
             image.src = url;
         });
         gl.generateMipmap(gl.TEXTURE_CUBE_MAP);

@@ -17,6 +17,9 @@ import { NormalMapShaderProgram } from "../shaders/NormalMapShaderProgram.js";
 import { FixedExtrudeCurve } from "./FixedSweepCurve.js";
 import { Vertex } from "./polygons/Vertex.js";
 import { TerrainShaderProgram } from "../shaders/TerrainShaderProgram.js";
+import { ContainerShaderProgram } from "../shaders/ContainerShaderProgram.js";
+import { PhongShaderProgram } from "../shaders/PhongShaderProgram.js";
+import { TexturedShaderProgram } from "../shaders/TexturedShaderProgram.js";
 
 
 let grey =   [.80, .80, .80];
@@ -38,42 +41,54 @@ export class Ship {
         }
     }
 
-    constructor(gl, L=1){
+    constructor(gl, L=1, lightDir, lightColor){
         let colors = [grey, red, blue, yellow, green];
 
         let hull_lower = new CubicBezier(gl, [[1, 0, 0], [1, -1, 0], [-1, -1, 0], [-1, 0, 0]]);
         let hull_upper = new Line(gl, [-1, 0, 0], [1, 0, 0]);
 
-        let hull_profile = new Polygon([...hull_lower.discretization(0.1), ...hull_upper.discretization(1)]);
+        let hull_profile = new Polygon([...hull_lower.discretization(0.05), ...hull_upper.discretization(1)]);
+        let hull_floor_profile = new Polygon(hull_upper.discretization(1))
 
         let path = new Line(gl, [0, 0, 0], [0, 0, L]);
         path.setBinor(0, 1, 0);
 
         let hull = new SweepCurve(gl, hull_profile, path, 1);
+        hull.attach(new PhongShaderProgram(gl, "../textures/yellowmetal.png", lightDir, lightColor, 10.0, 0.9));
         hull.setColor(red);
 
-        let diff = 1e-1;
+        let hull_floor = new SweepCurve(gl, hull_floor_profile, path, 1, false, 1, L);
+        hull_floor.translate(0, 0.001, 0);
+        hull_floor.attach(new NormalMapShaderProgram(gl, "../textures/rubber.png", "../textures/rubber-normalmap.png", lightDir, lightColor, 10.0, 0.5));
+        hull.addChild(hull_floor);
+
+        let containerShaderProgram = new ContainerShaderProgram(gl, "../textures/container.jpg", lightDir, lightColor, 100.0, 1.0);
+        let diff = 1e-2;
         let size = 0.25;
         for(let j = 0; j < 3; j++){
             for(let i = 0; i < 5; i++){
                 if(i > 2 && j > 1) continue;
-                let container = new Cuboid(gl, size-diff, size-diff, 2*size);
+                let container = new Cuboid(gl, size-diff, 2*size, size-diff);
                 container.translate((i-2)*size, size/2+1e-4 + j*size, L/4);
+                container.rotateX(Math.PI/2);
                 const random = Math.floor(Math.random() * colors.length);
                 container.setColor(colors[random]);
+                container.attach(containerShaderProgram);
                 hull.addChild(container);
             }
         }
 
-        let cube1 = new Cuboid(gl, 5*size, 3*size, size);
+        let sp = new NormalMapShaderProgram(gl, "../textures/cabina.png", "../textures/cable-normalmap.jpg", lightDir, lightColor, 100.0, 0.6);
+
+        let cube1 = new Cuboid(gl, 5*size, 3*size, size, 0.5, 1);
         cube1.translate(0, 3*size/2+1e-4, L/10);
-        cube1.setColor(red);
+        cube1.attach(sp);
 
         hull.addChild(cube1);
 
-        let cube2 = new Cuboid(gl, 6*size, size, 2*size);
+        let cube2 = new Cuboid(gl, 6*size, size, 2*size, 0.5, 1);
         cube2.translate(0, 7*size/2+2e-4, L/10);
-        cube2.setColor(red);
+        cube2.attach(sp);
 
         hull.addChild(cube2);
         return hull;

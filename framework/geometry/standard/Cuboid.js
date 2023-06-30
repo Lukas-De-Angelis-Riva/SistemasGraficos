@@ -113,59 +113,48 @@ export class Cuboid extends Object3D {
         return [binormal[0], binormal[1], binormal[2]];
     }
 
-    uv_upper_border_cover(iu){
+    uv_border_cover(iu){
         if (iu == 0 || iu == 7) {
-            return [0.5 - DELTA, 1/3 - DELTA];
+            return [0, 0];
         } else if (iu == 1 || iu == 2){
-            return [0.5 - DELTA, 0 + DELTA];
+            return [1, 0];
         } else if (iu == 3 || iu == 4){
-            return [0.25 + DELTA, 0 + DELTA];
+            return [1, 1];
         } else if (iu == 5 || iu == 6){
-            return [0.25 + DELTA, 1/3 - DELTA];
-        }
-    }
-
-    uv_bottom_border_cover(iu){
-        if (iu == 0 || iu == 7) {
-            return [0.5 - DELTA, 2/3 + DELTA];
-        } else if (iu == 1 || iu == 2){
-            return [0.5 - DELTA, 1 - DELTA];
-        } else if (iu == 3 || iu == 4){
-            return [0.25 + DELTA, 1 - DELTA];
-        } else if (iu == 5 || iu == 6){
-            return [0.25 + DELTA, 2/3 + DELTA];
+            return [0, 1];
         }
     }
 
     uv_border(iu, iv){
-        // iv = 2 or 3
-        let h = (iv == 2)?1/3+DELTA:2/3-DELTA;
-
-        if(iu == 0 || iu == 7){
-            return [0.5, h];
-        } else if (iu == 1 || iu == 2){
-            return [0.75, h];
+        const h = iv - 2;
+        if(iu == 0){
+            return [0, h];
+        } else if (iu == 1){
+            return [1, h];
+        } else if (iu == 2){
+            return [0, h];
         } else if (iu == 3){
             return [1, h];
-        } else if (iu == 4) {
+        } else if (iu == 4){
             return [0, h];
-        }else if (iu == 5 || iu == 6){
-            return [0.25, h];
+        } else if (iu == 5){
+            return [1, h];
+        } else if (iu == 6){
+            return [0, h]
+        } else if (iu == 7){
+            return [1, h];
         }
+        return [0.5, 0.5];
     }
 
     getTextureCordenates(u, v) {
         let iu = Math.round(u*7);
         let iv = Math.round(v*5);
 
-        if (iv == 0){ // upper center cover 
-            return [0.375, 1/6];
-        } else if (iv == 5) { // bottom center cover
-            return [0.375, 5/6];
-        } else if (iv == 1){ // upper border cover
-            return this.uv_upper_border_cover(iu);
-        } else if (iv == 4 ){ // bottom border cover
-            return this.uv_bottom_border_cover(iu);
+        if (iv == 0 || iv == 5){ // upper center cover 
+            return [0.5, 0.5];
+        } else if (iv == 1 || iv == 4){ // border cover
+            return this.uv_border_cover(iu);
         } else { // border
             return this.uv_border(iu, iv);
         }

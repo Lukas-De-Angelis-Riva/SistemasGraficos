@@ -104,7 +104,7 @@ function tick() {
 
     camera.move(movement);
  
-    //Ship.move(ship, app.L_terrain/2-3.5);
+    Ship.move(ship, app.L_terrain/2-3.5);
     drawScene();
 }
 
@@ -115,6 +115,7 @@ var ship;
 var trees;
 
 var skybox;
+
 function crearGeometria(){
     let lightDir = [-0.617, -0.717, 0.311];
     let lightColor = [1,1,1];
@@ -141,7 +142,7 @@ function crearGeometria(){
 
     bridge = new Bridge(gl, app.h1, app.h2, 1-app.a, (app.L_terrain/2-app.L_road_curve/2), app.L_road_curve, app.s1, lightDir, lightColor);
 
-    ship = new Ship(gl, 4);
+    ship = new Ship(gl, 4, lightDir, lightColor);
     ship.translate(0, H+0.25, app.L_terrain/2-3.5);
 
     followerCamera = new FollowerCamera(gl, [0, 2, -5], ship);

@@ -182,7 +182,7 @@ export class Object3D {
             this.webgl_tangent_buffer,
             this.webgl_binormal_buffer);
 
-        this.shaderProgram.draw(this.webgl_index_buffer, eyePos);
+        this.shaderProgram.draw(this.webgl_index_buffer, eyePos, this.color);
 
 
         // Activar o desactivar si se quieren (o no) ver las normales
